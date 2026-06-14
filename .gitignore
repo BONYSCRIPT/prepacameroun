@@ -1,0 +1,45 @@
+# Node
+node_modules/
+**/node_modules/
+dist/
+.next/
+.cache/
+
+# Environnement & secrets
+.env
+.env.local
+.env.*
+server/.env
+*.pem
+*.key
+
+# Idées reçues / Logs
+*.log
+server/combined-*.log
+server/error-*.log
+server/logs/
+
+# Fichiers sensibles
+server/config/firebase/serviceAccountKey.json
+server/db_credentials.txt
+KEYS.txt
+server/.env
+
+# Base de données (sauvegardes locales)
+database/
+sql_files/
+*.sql
+*.sql.gz
+
+# Uploads serveur (images uploadées en local)
+server/uploads/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swo
+*.swn

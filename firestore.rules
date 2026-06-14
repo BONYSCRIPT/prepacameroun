@@ -1,0 +1,128 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Fonction utilitaire : vérifier si l'utilisateur est authentifié
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Fonction utilitaire : vérifier si l'utilisateur est un admin
+    function isAdmin() {
+      return isAuthenticated()
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    // Fonction utilitaire : vérifier si l'utilisateur est propriétaire du document
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // ============================================================
+    // ADMINS (/admins)
+    // Seuls les admins peuvent lire/écrire la collection admins
+    // ============================================================
+    match /admins/{adminId} {
+      allow read: if isAdmin();
+      allow create: if true; // Inscription admin
+      allow update, delete: if isAdmin();
+    }
+
+    // ============================================================
+    // UTILISATEURS (/users)
+    // Un utilisateur peut lire/écrire son propre profil
+    // Les admins peuvent tout lire
+    // ============================================================
+    match /users/{userId} {
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      allow create: if isAuthenticated() && request.auth.uid == userId;
+      allow update: if isAuthenticated() && request.auth.uid == userId;
+      allow delete: if isAdmin();
+    }
+
+    // ============================================================
+    // PRÉPARATIONS AUX CONCOURS (/prepa_concours)
+    // Lecture : tout le monde (même non connecté)
+    // Écriture : admins uniquement
+    // ============================================================
+    match /prepa_concours/{prepaId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    // ============================================================
+    // DISCIPLINES (/disciplines)
+    // Lecture : tout le monde
+    // Écriture : admins uniquement
+    // ============================================================
+    match /disciplines/{disciplineId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    // ============================================================
+    // LEÇONS (/lecons)
+    // Lecture : utilisateurs connectés
+    // Écriture : admins uniquement
+    // ============================================================
+    match /lecons/{leconId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // ============================================================
+    // EXERCICES (/exercices)
+    // Lecture : utilisateurs connectés
+    // Écriture : admins uniquement
+    // ============================================================
+    match /exercices/{exerciceId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // ============================================================
+    // ANCIENS SUJETS (/anciens_sujets)
+    // Lecture : utilisateurs connectés
+    // Écriture : admins uniquement
+    // ============================================================
+    match /anciens_sujets/{sujetId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // ============================================================
+    // INSCRIPTIONS (/inscriptions)
+    // Un utilisateur peut lire ses propres inscriptions
+    // Les admins peuvent tout voir
+    // ============================================================
+    match /inscriptions/{inscriptionId} {
+      allow read: if isAuthenticated() && (resource.data.user_id == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && (resource.data.user_id == request.auth.uid || isAdmin());
+      allow delete: if isAdmin();
+    }
+
+    // ============================================================
+    // NOTIFICATIONS (/notifications)
+    // Un utilisateur peut lire ses propres notifications
+    // ============================================================
+    match /notifications/{notificationId} {
+      allow read: if isAuthenticated() && resource.data.user_id == request.auth.uid;
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && resource.data.user_id == request.auth.uid;
+      allow delete: if isAuthenticated() && resource.data.user_id == request.auth.uid;
+    }
+
+    // ============================================================
+    // TRANSACTIONS ZITOPAY (/transactions_zitopay)
+    // Accessible uniquement par les fonctions serverless (admin)
+    // ============================================================
+    match /transactions_zitopay/{transactionId} {
+      allow read: if isAdmin();
+      allow create: if true; // Créé par la fonction serverless
+      allow update: if isAdmin(); // Mis à jour par le webhook
+      allow delete: if false;
+    }
+  }
+}

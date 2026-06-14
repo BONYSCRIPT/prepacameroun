@@ -1,0 +1,148 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --primary: #bf0051;
+  --secondary: #0274d9;
+  --dark: #212529;
+  --light: #f8f9fa;
+  --light-accent: #f1f1f1;
+  --primary-dark: #8c003c;
+  --secondary-dark: #015aa9;
+}
+
+body {
+  font-family: 'Poppins', sans-serif;
+  color: var(--dark);
+  background-color: #f0f2f5;
+}
+
+/* Style pour les navigateurs WebKit (Chrome, Safari) */
+/* width */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+/* Track */
+::-webkit-scrollbar-track {
+  background: var(--light-accent);
+  border-radius: 10px;
+}
+
+/* Handle */
+::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 20px;
+}
+
+/* Handle on hover */
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Style pour le hero pleine hauteur */
+.fullscreen-hero {
+  min-height: calc(100vh - 56px); /* 56px est la hauteur standard de la navbar Bootstrap */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* Pour les écrans plus grands où la navbar peut être plus haute */
+@media (min-width: 992px) {
+  .fullscreen-hero {
+    min-height: calc(100vh - 60px);
+  }
+}
+
+/* Classes utilitaires pour les couleurs */
+.bg-primary-custom {
+  background-color: var(--primary) !important;
+}
+
+.bg-secondary-custom {
+  background-color: var(--secondary) !important;
+}
+
+.text-primary-custom {
+  color: var(--primary) !important;
+}
+
+.text-secondary-custom {
+  color: var(--secondary) !important;
+}
+
+/* Styles pour les boutons */
+.btn-primary-custom {
+  background-color: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 30px;
+  transition: all 0.3s ease;
+  font-weight: 500;
+}
+
+.btn-primary-custom:hover, .btn-primary-custom:focus {
+  background-color: var(--primary-dark);
+  color: white;
+  transform: translateY(-3px);
+  box-shadow: 0 7px 14px rgba(191, 0, 81, 0.4);
+}
+
+.btn-secondary-custom {
+  background-color: var(--secondary);
+  color: white;
+  border: none;
+  border-radius: 30px;
+  transition: all 0.3s ease;
+  font-weight: 500;
+}
+
+.btn-secondary-custom:hover, .btn-secondary-custom:focus {
+  background-color: var(--secondary-dark);
+  color: white;
+  transform: translateY(-3px);
+  box-shadow: 0 7px 14px rgba(2, 116, 217, 0.4);
+}
+
+.btn-outline-primary-custom {
+  background-color: transparent;
+  color: var(--primary);
+  border: 1px solid var(--primary);
+  border-radius: 30px;
+  transition: all 0.3s ease;
+  font-weight: 500;
+}
+
+.btn-outline-primary-custom:hover, .btn-outline-primary-custom:focus {
+  background-color: var(--primary);
+  color: white;
+  transform: translateY(-3px);
+}
+
+.btn-outline-secondary-custom {
+  background-color: transparent;
+  color: var(--secondary);
+  border: 1px solid var(--secondary);
+  border-radius: 30px;
+  transition: all 0.3s ease;
+  font-weight: 500;
+}
+
+.btn-outline-secondary-custom:hover, .btn-outline-secondary-custom:focus {
+  background-color: var(--secondary);
+  color: white;
+  transform: translateY(-3px);
+}
+
+/* Styles pour les cartes */
+.card-custom {
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05), 0 6px 6px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.card-custom:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1), 0 8px 8px rgba(0, 0, 0, 0.05);
+}

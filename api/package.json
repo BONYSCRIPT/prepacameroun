@@ -1,0 +1,9 @@
+{
+  "name": "prepacameroun-api",
+  "version": "1.0.0",
+  "description": "Vercel Serverless Functions pour Prepacameroun",
+  "type": "module",
+  "dependencies": {
+    "firebase-admin": "^13.4.0"
+  }
+}
