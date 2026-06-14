@@ -64,8 +64,8 @@ const LeconTab = ({ disciplineId }) => {
       const newLecon = await createLecon({
         titre: newLessonTitle,
         contenu: '',
-        discipline_id: disciplineId,
-        numero_page: lessons.length + 1
+        disciplineId: disciplineId,
+        numeroPage: lessons.length + 1
       });
       setLessons([...lessons, newLecon].sort((a, b) => a.numero_page - b.numero_page));
       setShowModal(false);

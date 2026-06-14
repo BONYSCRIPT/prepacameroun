@@ -20,7 +20,7 @@ import {
   writeBatch,
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
-import { db, storage } from '../config/firebase';
+import { db, storage, auth } from '../config/firebase';
 
 // ============================================================
 // UTILITAIRES
@@ -446,6 +446,21 @@ export const markNotificationAsRead = async (notificationId) => {
 };
 
 /** Supprime une notification. */
+export const markNotificationRead = async (notificationId) => {
+  const notifRef = doc(db, 'notifications', notificationId);
+  await updateDoc(notifRef, { lu: true });
+};
+
+/** Marque toutes les notifications d'un utilisateur comme lues. */
+export const markAllNotificationsRead = async () => {
+  const user = auth.currentUser;
+  if (!user) throw new Error('Utilisateur non connecté');
+  const q = query(collection(db, 'notifications'), where('user_id', '==', user.uid), where('lu', '==', false));
+  const snapshot = await getDocs(q);
+  const updates = snapshot.docs.map(d => updateDoc(doc(db, 'notifications', d.id), { lu: true }));
+  await Promise.all(updates);
+};
+
 export const deleteNotification = async (notificationId) => {
   await deleteDoc(doc(db, 'notifications', notificationId));
 };

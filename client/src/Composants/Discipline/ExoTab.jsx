@@ -68,8 +68,8 @@ const ExoTab = ({ disciplineId }) => {
         titre: newExerciceTitle,
         enonce: '',
         corrige: '',
-        discipline_id: disciplineId,
-        numero_page: exercices.length + 1
+        disciplineId: disciplineId,
+        numeroPage: exercices.length + 1
       });
       setExercices([...exercices, newExercice].sort((a, b) => a.numero_page - b.numero_page));
       setShowModal(false);

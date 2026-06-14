@@ -89,8 +89,8 @@ const AncienSujetTab = ({ disciplineId }) => {
         annee: newSujetAnnee,
         contenu: '',
         corrige: '',
-        discipline_id: disciplineId,
-        numero_page: anciensSujets.length + 1
+        disciplineId: disciplineId,
+        numeroPage: anciensSujets.length + 1
       });
       setAnciensSujets([...anciensSujets, newSujet].sort((a, b) => a.numero_page - b.numero_page));
       setShowModal(false);
