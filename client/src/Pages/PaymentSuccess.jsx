@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { MdCheckCircle, MdHome, MdArrowForward, MdErrorOutline } from 'react-icons/md';
 import NavbarApp from '../Composants/Dashboard/NavbarApp';
 import { toast } from 'react-toastify';
-import axiosInstance from '../utils/axiosConfig';
+import { getPrepaById } from '../services/firestoreService';
 import { useUserAuth } from '../contexts/useUserAuth';
 
 const PaymentSuccess = () => {
@@ -35,8 +35,7 @@ const PaymentSuccess = () => {
       setStatus('processing');
       console.log('[PaymentSuccess] Affichage du succès pour user:', currentUser.id);
 
-      const prepaRes = await axiosInstance.get('/api/prepas/' + prepaId);
-      const currentPrepa = prepaRes.data;
+      const currentPrepa = await getPrepaById(prepaId);
       setPrepaName(currentPrepa.nom || 'la préparation');
 
       // Le backend (via IPN Zitopay) s'est déjà chargé de valider l'inscription.

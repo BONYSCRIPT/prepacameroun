@@ -1,8 +1,10 @@
 import { useNavigate, Link } from 'react-router-dom';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
-import axiosInstance from '../utils/axiosConfig';
 import { useAdminAuth } from '../contexts/useAdminAuth';
+import { checkIfAdmin } from '../services/firestoreService';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '../config/firebase';
 import 'bootstrap/dist/css/bootstrap.css';
 import AdminNavbar from '../Composants/Admin/AdminNavbar';
 import { useState } from 'react';
@@ -65,17 +67,23 @@ const AdminConnexion = () => {
   const handleSubmit = async (values, { setSubmitting, setErrors }) => {
     setIsLoading(true);
     try {
-      const response = await axiosInstance.post('/api/admin/login', values);
-      if (response.data.token) {
-        login({ token: response.data.token, adminId: response.data.adminId, role: response.data.role });
+      // Connexion Firebase Auth
+      const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
+      const firebaseUser = userCredential.user;
+
+      // Vérifier si l'utilisateur est admin dans Firestore
+      const adminData = await checkIfAdmin(firebaseUser.uid);
+
+      if (adminData) {
+        login({ token: await firebaseUser.getIdToken(), adminId: firebaseUser.uid, role: adminData.role || 'admin' });
         toast.success('Connexion réussie !');
         navigate('/admin/dashboard');
       } else {
-        setErrors({ submit: 'Erreur inattendue lors de la connexion.' });
-        toast.error('Erreur inattendue lors de la connexion.');
+        setErrors({ submit: 'Vous n\'êtes pas administrateur.' });
+        toast.error('Vous n\'êtes pas administrateur.');
       }
     } catch (error) {
-      const errorMessage = error.response?.data?.message || 'Erreur de connexion au serveur.';
+      const errorMessage = error.message || 'Erreur de connexion au serveur.';
       setErrors({ submit: errorMessage });
       toast.error(errorMessage);
     }

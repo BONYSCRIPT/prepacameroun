@@ -3,7 +3,7 @@ import { MdOutlineNotifications, MdDelete, MdMarkEmailRead, MdRefresh, MdNotific
 import { Modal, Button, Spinner, Badge, Tabs, Tab, Form } from 'react-bootstrap';
 import { toast } from 'react-toastify';
 import { useUserAuth } from '../../../contexts/useUserAuth';
-import axiosInstance from '../../../utils/axiosConfig';
+import { getUserNotifications, markNotificationRead, markAllNotificationsRead, deleteNotification } from '../../../services/firestoreService';
 
 // Charte graphique
 const theme = {
@@ -52,8 +52,8 @@ const NotificationBell = () => {
   const fetchNotifications = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await axiosInstance.get('/api/users/notifications');
-      setNotifications(response.data);
+      const notificationsData = await getUserNotifications();
+      setNotifications(notificationsData);
     } catch (error) {
       console.error('Erreur lors de la rcupration des notifications:', error);
       toast.error('Erreur lors du chargement des notifications');
@@ -78,7 +78,7 @@ const NotificationBell = () => {
   // Fonction pour marquer une notification comme lue
   const markAsRead = async (notificationId) => {
     try {
-      await axiosInstance.put(`/api/users/notifications/${notificationId}/read`);
+      await markNotificationRead(notificationId);
       // Mettre  jour l'tat local sans refaire une requte
       setNotifications(prevNotifications =>
         prevNotifications.map(notification =>
@@ -105,7 +105,7 @@ const NotificationBell = () => {
       // Pour chaque notification non lue, envoyer une requte pour la marquer comme lue
       await Promise.all(
         unreadIds.map(id =>
-          axiosInstance.put(`/api/users/notifications/${id}/read`, {})
+          markNotificationRead(id)
         )
       );
       // Mettre  jour l'tat local
@@ -127,7 +127,7 @@ const NotificationBell = () => {
     }
     if (window.confirm('tes-vous sr de vouloir supprimer cette notification ?')) {
       try {
-        await axiosInstance.delete(`/api/users/notifications/${notificationId}`);
+        await deleteNotification(notificationId);
         // Mise  jour de l'tat local aprs suppression
         setNotifications(notifications.filter(n => n.id !== notificationId));
         toast.success('Notification supprime avec succs');

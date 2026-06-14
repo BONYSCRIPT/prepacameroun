@@ -6,7 +6,7 @@ import 'bootstrap/dist/js/bootstrap.js';
 import LeconTab from "../Composants/Discipline/LeconTab";
 import ExoTab from "../Composants/Discipline/ExoTab";
 import AncienSujetTab from "../Composants/Discipline/AncienSujetTab";
-import axiosInstance from "../utils/axiosConfig";
+import { getDisciplineById } from "../services/firestoreService";
 import { toast } from "react-toastify";
 import { MdArrowBack } from "react-icons/md";
 
@@ -22,8 +22,8 @@ const Discipline = () => {
     const fetchDiscipline = async () => {
       try {
         setLoading(true);
-        const response = await axiosInstance.get(`/api/disciplines/${disciplineId}`);
-        setDiscipline(response.data);
+        const data = await getDisciplineById(disciplineId);
+        setDiscipline(data);
         setLoading(false);
       } catch (error) {
         console.error("Erreur lors de la récupération de la discipline:", error);

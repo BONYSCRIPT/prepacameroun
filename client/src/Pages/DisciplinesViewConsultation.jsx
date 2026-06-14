@@ -5,13 +5,14 @@ import NavbarApp from '../Composants/Dashboard/NavbarApp';
 import DisciplineCard from '../Composants/DisciplinesView/DisciplineCard';
 import { useUserAuth } from '../contexts/useUserAuth';
 import { MdArrowBack } from 'react-icons/md';
-import axiosInstance from '../utils/axiosConfig';
+import { getPrepaById, getDisciplinesByPrepa } from '../services/firestoreService';
 import { toast } from 'react-toastify';
 import theme from '../utils/theme'; // Importer le thème
 
 const DisciplinesViewConsultation = () => {
   // États
   const [disciplines, setDisciplines] = useState([]);
+  const [prepa, setPrepa] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -38,12 +39,12 @@ const DisciplinesViewConsultation = () => {
       try {
         setLoading(true);
         const token = localStorage.getItem('userToken');
-        const response = await axiosInstance.get(`/api/disciplines-user/prepa/${prepaId}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        setDisciplines(response.data);
+          const [prepaData, disciplinesData] = await Promise.all([
+            getPrepaById(prepaId),
+            getDisciplinesByPrepa(prepaId)
+          ]);
+          setPrepa(prepaData);
+          setDisciplines(disciplinesData);
         setLoading(false);
       } catch (error) {
         console.error("Erreur lors de la récupération des disciplines:", error);

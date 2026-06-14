@@ -6,7 +6,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus, faBook, faTrash, faSave } from '@fortawesome/free-solid-svg-icons';
-import axiosInstance from '../../utils/axiosConfig';
+import { getLeconsByDiscipline, createLecon, updateLecon, deleteLecon } from '../../services/firestoreService';
 import { toast } from 'react-toastify';
 import * as Yup from 'yup';
 
@@ -44,8 +44,8 @@ const LeconTab = ({ disciplineId }) => {
   const fetchLessons = useCallback(async () => {
     setIsLoading(true);
     try {
-      const response = await axiosInstance.get(`/api/lecons/discipline/${disciplineId}`);
-      setLessons(response.data.sort((a, b) => a.numero_page - b.numero_page));
+      const data = await getLeconsByDiscipline(disciplineId);
+      setLessons(data.sort((a, b) => a.numero_page - b.numero_page));
     } catch (error) {
       toast.error('Erreur lors de la récupération des leçons');
     } finally {
@@ -61,13 +61,13 @@ const LeconTab = ({ disciplineId }) => {
     try {
       await lessonSchema.validate({ titre: newLessonTitle });
 
-      const response = await axiosInstance.post('/api/lecons', {
+      const newLecon = await createLecon({
         titre: newLessonTitle,
         contenu: '',
         discipline_id: disciplineId,
         numero_page: lessons.length + 1
       });
-      setLessons([...lessons, response.data].sort((a, b) => a.numero_page - b.numero_page));
+      setLessons([...lessons, newLecon].sort((a, b) => a.numero_page - b.numero_page));
       setShowModal(false);
       setNewLessonTitle('');
       toast.success('Nouvelle leçon créée avec succès');
@@ -98,7 +98,7 @@ const LeconTab = ({ disciplineId }) => {
           ...selectedLesson,
           contenu: editorContent
         };
-        await axiosInstance.put(`/api/lecons/${selectedLesson.id}`, updatedLesson);
+        await updateLecon(selectedLesson.id, updatedLesson);
         const updatedLessons = lessons.map(lesson =>
           lesson.id === updatedLesson.id ? updatedLesson : lesson
         );
@@ -117,7 +117,7 @@ const LeconTab = ({ disciplineId }) => {
   const handleDeleteLesson = async (lessonId) => {
     if (window.confirm('Êtes-vous sûr de vouloir supprimer cette leçon ?')) {
       try {
-        await axiosInstance.delete(`/api/lecons/${lessonId}`);
+        await deleteLecon(lessonId);
         setLessons(lessons.filter(lesson => lesson.id !== lessonId));
         if (selectedLesson && selectedLesson.id === lessonId) {
           setSelectedLesson(null);

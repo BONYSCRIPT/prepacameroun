@@ -1,0 +1,221 @@
+Structure du dossier
+Le num‚ro de s‚rie du volume est A406-CD83
+C:.
+³   arborescence.txt
+³   package-lock.json
+³   package.json
+³   structure.txt
+³   
+ÃÄÄÄclient
+³   ³   .eslintrc.cjs
+³   ³   .gitignore
+³   ³   index.html
+³   ³   package-lock.json
+³   ³   package.json
+³   ³   README.md
+³   ³   vite.config.js
+³   ³   
+³   ÃÄÄÄpublic
+³   ³   ³   vite.svg
+³   ³   ³   
+³   ³   ÀÄÄÄimages
+³   ³           diagonal.png
+³   ³           prepacouverture.png
+³   ³           
+³   ÀÄÄÄsrc
+³       ³   index.css
+³       ³   index.jsx
+³       ³   main.jsx
+³       ³   
+³       ÃÄÄÄComposants
+³       ³   ³   Navbar.jsx
+³       ³   ³   Page.jsx
+³       ³   ³   
+³       ³   ÃÄÄÄAdmin
+³       ³   ³       AdminDisciplineCard.jsx
+³       ³   ³       AdminNavbar.jsx
+³       ³   ³       
+³       ³   ÃÄÄÄDashboard
+³       ³   ³   ³   MyPrepaCard.jsx
+³       ³   ³   ³   NavbarApp.jsx
+³       ³   ³   ³   Prepas.jsx
+³       ³   ³   ³   Transaction.jsx
+³       ³   ³   ³   Validite.jsx
+³       ³   ³   ³   Vide.jsx
+³       ³   ³   ³   
+³       ³   ³   ÃÄÄÄNavbarApp
+³       ³   ³   ³       NotificationBell.jsx
+³       ³   ³   ³       
+³       ³   ³   ÀÄÄÄPrepas
+³       ³   ³           Card.jsx
+³       ³   ³           ZitopayButton.jsx
+³       ³   ³           
+³       ³   ÃÄÄÄDiscipline
+³       ³   ³   ³   AncienSujetTab.jsx
+³       ³   ³   ³   ExoTab.jsx
+³       ³   ³   ³   LeconTab.jsx
+³       ³   ³   ³   
+³       ³   ³   ÀÄÄÄEditeur
+³       ³   ³           EditorToolbar.jsx
+³       ³   ³           
+³       ³   ÃÄÄÄDisciplinesView
+³       ³   ³       DisciplineCard.jsx
+³       ³   ³       PrepaBtn.jsx
+³       ³   ³       
+³       ³   ÃÄÄÄimages
+³       ³   ³       image.jpg
+³       ³   ³       image2.png
+³       ³   ³       img.jpg
+³       ³   ³       prepalogo.png
+³       ³   ³       
+³       ³   ÀÄÄÄMenu
+³       ³           PrepaCard.jsx
+³       ³           
+³       ÃÄÄÄcontexts
+³       ³       AdminAuthContext.jsx
+³       ³       useAdminAuth.jsx
+³       ³       UserAuthContext.jsx
+³       ³       useUserAuth.jsx
+³       ³       
+³       ÃÄÄÄPages
+³       ³       Admin.jsx
+³       ³       AdminConnexion.jsx
+³       ³       AdminInscription.jsx
+³       ³       AdminRedirect.jsx
+³       ³       Dashboard.jsx
+³       ³       Discipline.jsx
+³       ³       DisciplinesView.jsx
+³       ³       DisciplinesViewConsultation.jsx
+³       ³       Home.jsx
+³       ³       Menu.jsx
+³       ³       PaymentCancel.jsx
+³       ³       PaymentFailure.jsx
+³       ³       PaymentPage.jsx
+³       ³       PaymentSuccess.jsx
+³       ³       PrepaPage.jsx
+³       ³       PrepaPageConsultation.jsx
+³       ³       
+³       ÃÄÄÄStyles
+³       ÀÄÄÄutils
+³               AdminPrivateRoute.jsx
+³               axiosConfig.jsx
+³               UserPrivateRoute.jsx
+³               validationUtils.jsx
+³               
+ÃÄÄÄdatabase
+³   ³   prepacameroun_db.sql
+³   ³   
+³   ÃÄÄÄmigrations
+³   ÀÄÄÄseed-data
+ÃÄÄÄserver
+³   ³   .env
+³   ³   app.js
+³   ³   combined.log
+³   ³   cronJobs.js
+³   ³   error.log
+³   ³   generatekeys.js
+³   ³   package-lock.json
+³   ³   package.json
+³   ³   server.js
+³   ³   
+³   ÃÄÄÄconfig
+³   ³       database.js
+³   ³       
+³   ÃÄÄÄcontrollers
+³   ³       adminController.js
+³   ³       anciensSujets.controller.js
+³   ³       disciplines.controller.js
+³   ³       exercices.controller.js
+³   ³       inscriptionController.js
+³   ³       lecons.controller.js
+³   ³       notificationController.js
+³   ³       paymentController.js
+³   ³       prepaConcours.controller.js
+³   ³       userController.js
+³   ³       
+³   ÃÄÄÄmiddleware
+³   ³       adminAuthMiddleware.js
+³   ³       adminValidation.js
+³   ³       ancienSujetValidation.js
+³   ³       authMiddleware.js
+³   ³       checkActiveInscription.js
+³   ³       disciplineValidation.js
+³   ³       exerciceValidation.js
+³   ³       leconValidation.js
+³   ³       prepaValidation.js
+³   ³       uploadDisciplineImgMiddleware.js
+³   ³       uploadPrepaImgMiddleware.js
+³   ³       userValidation.js
+³   ³       
+³   ÃÄÄÄmodels
+³   ÃÄÄÄroutes
+³   ³       adminRoutes.js
+³   ³       anciensSujets.routes.js
+³   ³       disciplines.routes.js
+³   ³       disciplinesUser.routes.js
+³   ³       exercices.routes.js
+³   ³       inscriptionRoutes.js
+³   ³       lecons.routes.js
+³   ³       paymentRoutes.js
+³   ³       prepaConcours.routes.js
+³   ³       userRoutes.js
+³   ³       
+³   ÃÄÄÄscripts
+³   ³       updateInscriptionStatus.js
+³   ³       
+³   ÃÄÄÄtests
+³   ³       payment.test.js
+³   ³       paymentSimulation.test.js
+³   ³       
+³   ÃÄÄÄuploads
+³   ³   ÀÄÄÄimages
+³   ³       ÃÄÄÄdisciplines
+³   ³       ³       1725133742318.PNG
+³   ³       ³       1725271372524.PNG
+³   ³       ³       1725271383373.PNG
+³   ³       ³       1725278637497.PNG
+³   ³       ³       1725279142385.PNG
+³   ³       ³       1725279151620.PNG
+³   ³       ³       1725279171917.PNG
+³   ³       ³       1725279179948.PNG
+³   ³       ³       1725279202461.PNG
+³   ³       ³       1725279348484.PNG
+³   ³       ³       1725279364439.PNG
+³   ³       ³       1725279378626.PNG
+³   ³       ³       1725279388704.PNG
+³   ³       ³       1725279408128.PNG
+³   ³       ³       1725279416477.PNG
+³   ³       ³       1725288100945.PNG
+³   ³       ³       1725288291326.PNG
+³   ³       ³       1725288302079.PNG
+³   ³       ³       1725461395537.PNG
+³   ³       ³       1725461409502.PNG
+³   ³       ³       default.png
+³   ³       ³       
+³   ³       ÀÄÄÄprepas
+³   ³               1724923145407.PNG
+³   ³               1724923450842.PNG
+³   ³               1724923478028.PNG
+³   ³               1725126256810.PNG
+³   ³               1725131592560.PNG
+³   ³               1725133019462.PNG
+³   ³               1725133384180.PNG
+³   ³               1725133470351.PNG
+³   ³               1725133665079.PNG
+³   ³               1725265299073.PNG
+³   ³               1725269770320.PNG
+³   ³               1725271344418.PNG
+³   ³               1725279024234.PNG
+³   ³               1725439417155.PNG
+³   ³               1725457432952.png
+³   ³               1725457583640.PNG
+³   ³               1725457657119.PNG
+³   ³               default.png
+³   ³               
+³   ÀÄÄÄutils
+³           errorHandler.js
+³           logger.js
+³           
+ÀÄÄÄsql_files
+        prepacameroun_db.sql
+        

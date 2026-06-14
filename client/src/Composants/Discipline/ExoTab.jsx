@@ -6,7 +6,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus, faBook, faTrash, faSave } from '@fortawesome/free-solid-svg-icons';
-import axiosInstance from '../../utils/axiosConfig';
+import { getExercicesByDiscipline, createExercice, updateExercice, deleteExercice } from '../../services/firestoreService';
 import { toast } from 'react-toastify';
 import * as Yup from 'yup';
 
@@ -43,8 +43,8 @@ const ExoTab = ({ disciplineId }) => {
   const fetchExercices = useCallback(async () => {
     setIsLoading(true);
     try {
-      const response = await axiosInstance.get(`/api/exercices/discipline/${disciplineId}`);
-      setExercices(response.data.sort((a, b) => a.numero_page - b.numero_page));
+      const data = await getExercicesByDiscipline(disciplineId);
+      setExercices(data.sort((a, b) => a.numero_page - b.numero_page));
     } catch (error) {
       toast.error('Erreur lors de la récupération des exercices');
     } finally {
@@ -64,14 +64,14 @@ const ExoTab = ({ disciplineId }) => {
     }
 
     try {
-      const response = await axiosInstance.post('/api/exercices', {
+      const newExercice = await createExercice({
         titre: newExerciceTitle,
         enonce: '',
         corrige: '',
         discipline_id: disciplineId,
         numero_page: exercices.length + 1
       });
-      setExercices([...exercices, response.data].sort((a, b) => a.numero_page - b.numero_page));
+      setExercices([...exercices, newExercice].sort((a, b) => a.numero_page - b.numero_page));
       setShowModal(false);
       setNewExerciceTitle('');
       setNewExerciceTitleError('');
@@ -109,7 +109,7 @@ const ExoTab = ({ disciplineId }) => {
           enonce: enonceContent,
           corrige: corrigeContent
         };
-        await axiosInstance.put(`/api/exercices/${selectedExercice.id}`, updatedExercice);
+        await updateExercice(selectedExercice.id, updatedExercice);
         const updatedExercices = exercices.map(exercice =>
           exercice.id === updatedExercice.id ? updatedExercice : exercice
         );
@@ -125,7 +125,7 @@ const ExoTab = ({ disciplineId }) => {
   const handleDeleteExercice = async (exerciceId) => {
     if (window.confirm('Êtes-vous sûr de vouloir supprimer cet exercice ?')) {
       try {
-        await axiosInstance.delete(`/api/exercices/${exerciceId}`);
+        await deleteExercice(exerciceId);
         setExercices(exercices.filter(exercice => exercice.id !== exerciceId));
         if (selectedExercice && selectedExercice.id === exerciceId) {
           setSelectedExercice(null);

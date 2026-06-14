@@ -12,7 +12,7 @@ import {
 } from 'react-icons/md';
 import Page from '../Composants/Page';
 import NavbarApp from '../Composants/Dashboard/NavbarApp';
-import axiosInstance from '../utils/axiosConfig';
+import { getPrepaById, getDisciplineById, getLeconsByDiscipline, getExercicesByDiscipline, getAnciensSujetsByDiscipline } from '../services/firestoreService';
 import Button from 'react-bootstrap/Button';
 import { toast } from 'react-toastify';
 import { useUserAuth } from '../contexts/useUserAuth';
@@ -108,28 +108,25 @@ const PrepaPageConsultation = () => {
         setError(null);
 
         try {
-            // Récupération des données de la prépa
-            const prepaResponse = await axiosInstance.get(`/api/prepas/${prepaId}`);
-            setPrepa(prepaResponse.data);
+            // Récupération depuis Firestore
+            const [prepaData, disciplineData, leconsData, exercicesData, anciensSujetsData] = await Promise.all([
+                getPrepaById(prepaId),
+                getDisciplineById(disciplineId),
+                getLeconsByDiscipline(disciplineId),
+                getExercicesByDiscipline(disciplineId),
+                getAnciensSujetsByDiscipline(disciplineId)
+            ]);
 
-            // Récupération des données de la discipline
-            const disciplineResponse = await axiosInstance.get(`/api/disciplines/${disciplineId}`);
-            setDiscipline(disciplineResponse.data);
+            setPrepa(prepaData);
+            setDiscipline(disciplineData);
+            setCourses([...leconsData].sort((a, b) => a.numero_page - b.numero_page));
+            setExercises([...exercicesData].sort((a, b) => a.numero_page - b.numero_page));
+            setPastExams([...anciensSujetsData].sort((a, b) => a.numero_page - b.numero_page));
 
-            // Récupération et tri des cours
-            const coursesResponse = await axiosInstance.get(`/api/lecons/discipline/${disciplineId}`);
-            const sortedCourses = [...coursesResponse.data].sort((a, b) => a.numero_page - b.numero_page);
-            setCourses(sortedCourses);
-
-            // Récupération et tri des exercices
-            const exercisesResponse = await axiosInstance.get(`/api/exercices/discipline/${disciplineId}`);
-            const sortedExercises = [...exercisesResponse.data].sort((a, b) => a.numero_page - b.numero_page);
-            setExercises(sortedExercises);
-
-            // Récupération et tri des anciens sujets
-            const pastExamsResponse = await axiosInstance.get(`/api/anciens-sujets/discipline/${disciplineId}`);
-            const sortedPastExams = [...pastExamsResponse.data].sort((a, b) => a.numero_page - b.numero_page);
-            setPastExams(sortedPastExams);
+            // Trier les tableaux
+            const sortedCourses = [...leconsData].sort((a, b) => a.numero_page - b.numero_page);
+            const sortedExercises = [...exercicesData].sort((a, b) => a.numero_page - b.numero_page);
+            const sortedPastExams = [...anciensSujetsData].sort((a, b) => a.numero_page - b.numero_page);
 
             // Initialiser avec le premier cours si disponible
             if (sortedCourses.length > 0) {

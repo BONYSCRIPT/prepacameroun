@@ -1,7 +1,9 @@
 import { useNavigate, Link } from 'react-router-dom';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
-import axiosInstance from '../utils/axiosConfig';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '../config/firebase';
+import { createAdmin } from '../services/firestoreService';
 import 'bootstrap/dist/css/bootstrap.css';
 import AdminNavbar from '../Composants/Admin/AdminNavbar';
 import { useState } from 'react';
@@ -109,33 +111,27 @@ const AdminInscription = () => {
     setIsLoading(true);
     try {
       console.log('Sending data to server:', values);
-      const response = await axiosInstance.post('/api/admin/register', values);
-      console.log('Server response:', response.data);
+      // Créer l'utilisateur Firebase Auth
+      const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
+      const firebaseUser = userCredential.user;
 
-      if (response.data.adminId) {
-        console.log('Registration successful, navigating to login page');
-        toast.success('Inscription réussie ! Vous pouvez maintenant vous connecter.');
-        navigate('/admin/connexion');
-      } else {
-        console.warn('AdminId not received in response');
-        setErrors({ submit: 'Erreur inattendue lors de l\'inscription.' });
-        toast.error('Erreur inattendue lors de l\'inscription.');
-      }
+      // Créer le document admin dans Firestore
+      await createAdmin({
+        username: values.username,
+        email: values.email,
+        firebaseUid: firebaseUser.uid,
+        role: values.role || 'admin'
+      });
+
+      console.log('Registration successful, navigating to login page');
+      toast.success('Inscription réussie ! Vous pouvez maintenant vous connecter.');
+      navigate('/admin/connexion');
     } catch (error) {
       console.error('Error during registration:', error);
       let errorMessage = 'Une erreur est survenue lors de l\'inscription.';
-
-      if (error.response) {
-        console.error('Server error response:', error.response.data);
-        errorMessage = error.response.data.message || errorMessage;
-      } else if (error.request) {
-        console.error('No response received:', error.request);
-        errorMessage = 'Aucune réponse reçue du serveur.';
-      } else {
-        console.error('Error setting up request:', error.message);
-        errorMessage = 'Erreur de connexion au serveur.';
+      if (error.message) {
+        errorMessage = error.message;
       }
-
       setErrors({ submit: errorMessage });
       toast.error(errorMessage);
     }

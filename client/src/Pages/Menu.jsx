@@ -24,7 +24,7 @@ import {
   FaPhone,
   FaEnvelope
 } from 'react-icons/fa';
-import axios from 'axios';
+import { getPublishedPrepas } from '../services/firestoreService';
 import * as Yup from 'yup';
 import { toast } from 'react-toastify';
 
@@ -401,21 +401,16 @@ function Menu() {
 
   const fetchPrepas = useCallback(async () => {
     try {
-      const response = await axios.get('/api/prepas/published');
-      // V rifier que la r ponse est un tableau
-      if (Array.isArray(response.data)) {
-        setPrepas(response.data);
-      } else if (response.data && Array.isArray(response.data.data)) {
-        // Si la r ponse est un objet avec une propri t  data qui est un tableau
-        setPrepas(response.data.data);
+      const data = await getPublishedPrepas();
+      if (Array.isArray(data)) {
+        setPrepas(data);
       } else {
-        console.warn('La r ponse API n\'est pas un tableau:', response.data);
-        setPrepas([]); // Initialiser avec un tableau vide en cas d'erreur
+        setPrepas([]);
       }
       setLoading(false);
     } catch (error) {
       console.error('Erreur lors de la r cup ration des pr parations:', error);
-      setPrepas([]); // Initialiser avec un tableau vide en cas d'erreur
+      setPrepas([]);
       setLoading(false);
     }
   }, []);

@@ -6,7 +6,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus, faBook, faTrash, faSave } from '@fortawesome/free-solid-svg-icons';
-import axiosInstance from '../../utils/axiosConfig';
+import { getAnciensSujetsByDiscipline, createAncienSujet, updateAncienSujet, deleteAncienSujet } from '../../services/firestoreService';
 import { toast } from 'react-toastify';
 import * as Yup from 'yup';
 
@@ -63,8 +63,8 @@ const AncienSujetTab = ({ disciplineId }) => {
   const fetchAnciensSujets = useCallback(async () => {
     setIsLoading(true);
     try {
-      const response = await axiosInstance.get(`/api/anciens-sujets/discipline/${disciplineId}`);
-      setAnciensSujets(response.data.sort((a, b) => a.numero_page - b.numero_page));
+      const data = await getAnciensSujetsByDiscipline(disciplineId);
+      setAnciensSujets(data.sort((a, b) => a.numero_page - b.numero_page));
     } catch (error) {
       toast.error('Erreur lors de la récupération des anciens sujets');
     } finally {
@@ -84,7 +84,7 @@ const AncienSujetTab = ({ disciplineId }) => {
     }
 
     try {
-      const response = await axiosInstance.post('/api/anciens-sujets', {
+      const newSujet = await createAncienSujet({
         titre: newSujetTitle,
         annee: newSujetAnnee,
         contenu: '',
@@ -92,7 +92,7 @@ const AncienSujetTab = ({ disciplineId }) => {
         discipline_id: disciplineId,
         numero_page: anciensSujets.length + 1
       });
-      setAnciensSujets([...anciensSujets, response.data].sort((a, b) => a.numero_page - b.numero_page));
+      setAnciensSujets([...anciensSujets, newSujet].sort((a, b) => a.numero_page - b.numero_page));
       setShowModal(false);
       setNewSujetTitle('');
       setNewSujetAnnee(new Date().getFullYear());
@@ -134,7 +134,7 @@ const AncienSujetTab = ({ disciplineId }) => {
           contenu: contenuContent,
           corrige: corrigeContent
         };
-        await axiosInstance.put(`/api/anciens-sujets/${selectedSujet.id}`, updatedSujet);
+        await updateAncienSujet(selectedSujet.id, updatedSujet);
         const updatedSujets = anciensSujets.map(sujet =>
           sujet.id === updatedSujet.id ? updatedSujet : sujet
         );
@@ -151,7 +151,7 @@ const AncienSujetTab = ({ disciplineId }) => {
   const handleDeleteSujet = async (sujetId) => {
     if (window.confirm('Êtes-vous sûr de vouloir supprimer cet ancien sujet ?')) {
       try {
-        await axiosInstance.delete(`/api/anciens-sujets/${sujetId}`);
+        await deleteAncienSujet(sujetId);
         setAnciensSujets(anciensSujets.filter(sujet => sujet.id !== sujetId));
         if (selectedSujet && selectedSujet.id === sujetId) {
           setSelectedSujet(null);

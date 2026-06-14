@@ -6,7 +6,7 @@ import DisciplineCard from '../Composants/DisciplinesView/DisciplineCard';
 import PrepaBtn from '../Composants/DisciplinesView/PrepaBtn';
 import { useUserAuth } from '../contexts/useUserAuth';
 import { MdArrowBack, MdMenu } from 'react-icons/md';
-import axiosInstance from '../utils/axiosConfig';
+import { getUserInscriptions, getDisciplinesByPrepa } from '../services/firestoreService';
 import { toast } from 'react-toastify';
 import theme from '../utils/theme'; // Importer le thème
 
@@ -43,19 +43,13 @@ const DisciplinesView = () => {
     const fetchPrepas = async () => {
       try {
         setLoading(true);
-        const token = localStorage.getItem('userToken');
-        const response = await axiosInstance.get('/api/inscriptions/user/inscriptions', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-
-        // Filtrer les préparations avec des inscriptions actives
-        const activePrepas = response.data.filter(inscription => inscription.statut === 'active');
+        const inscriptions = await getUserInscriptions();
+        // Filtrer les inscriptions actives
+        const activePrepas = inscriptions.filter(i => i.statut === 'active');
         setPrepas(activePrepas);
 
-        // Sélectionner la préparation correspondant à l'identifiant de l'URL ou la première préparation active
-        const prepaToSelect = activePrepas.find(prepa => prepa.prepa_id.toString() === prepaId) || activePrepas[0];
+        // Sélectionner la préparation correspondant à l'identifiant de l'URL
+        const prepaToSelect = activePrepas.find(prepa => prepa.prepa_id?.toString() === prepaId) || activePrepas[0];
         if (prepaToSelect) {
           setSelectedPrepa(prepaToSelect.prepa_id);
         }
@@ -78,13 +72,8 @@ const DisciplinesView = () => {
       if (selectedPrepa) {
         try {
           setLoading(true);
-          const token = localStorage.getItem('userToken');
-          const response = await axiosInstance.get(`/api/disciplines-user/prepa/${selectedPrepa}`, {
-            headers: {
-              'Authorization': `Bearer ${token}`
-            }
-          });
-          setDisciplines(response.data);
+          const disciplinesData = await getDisciplinesByPrepa(selectedPrepa);
+          setDisciplines(disciplinesData);
           setLoading(false);
         } catch (error) {
           console.error("Erreur lors de la récupération des disciplines:", error);
