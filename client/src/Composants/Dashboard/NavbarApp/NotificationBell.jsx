@@ -48,11 +48,18 @@ const NotificationBell = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isAnimating, setIsAnimating] = useState(false);
 
+  const { user } = useUserAuth();
+
   // Fonction pour rcuprer les notifications depuis le serveur
   const fetchNotifications = useCallback(async () => {
     try {
       setLoading(true);
-      const notificationsData = await getUserNotifications();
+      const userId = user?.id;
+      if (!userId) {
+        setNotifications([]);
+        return;
+      }
+      const notificationsData = await getUserNotifications(userId);
       setNotifications(notificationsData);
     } catch (error) {
       console.error('Erreur lors de la rcupration des notifications:', error);
@@ -60,9 +67,7 @@ const NotificationBell = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
-
-  const { user } = useUserAuth();
+  }, [user?.id]);
 
   // Effet pour charger les notifications quand l'utilisateur est présent
   useEffect(() => {

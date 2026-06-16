@@ -21,12 +21,13 @@ service cloud.firestore {
 
     // ============================================================
     // ADMINS (/admins)
-    // Seuls les admins peuvent lire/écrire la collection admins
+    // Permettre à un utilisateur authentifié de lire son propre
+    // document admin (nécessaire pour la vérification isAdmin)
     // ============================================================
     match /admins/{adminId} {
-      allow read: if isAdmin();
+      allow read: if isAuthenticated() && request.auth.uid == adminId;
       allow create: if true; // Inscription admin
-      allow update, delete: if isAdmin();
+      allow update, delete: if isAuthenticated() && request.auth.uid == adminId;
     }
 
     // ============================================================
