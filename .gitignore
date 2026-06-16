@@ -9,6 +9,7 @@ dist/
 .env
 .env.local
 .env.*
+.env.vercel
 server/.env
 *.pem
 *.key
@@ -33,6 +34,9 @@ sql_files/
 
 # Uploads serveur (images uploadées en local)
 server/uploads/
+
+# Build temp
+client/build_output.txt
 
 # OS
 .DS_Store
