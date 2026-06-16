@@ -1,7 +1,7 @@
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap';
 import { useState, useMemo, useRef, useDeferredValue, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { MdClass, MdClose, MdSearch, MdCheckCircle } from 'react-icons/md';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
