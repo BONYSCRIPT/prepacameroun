@@ -19,36 +19,39 @@ import {
   Timestamp,
   writeBatch,
 } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
-import { db, storage, auth } from '../config/firebase';
+import { db, auth } from '../config/firebase';
 
 // ============================================================
 // UTILITAIRES
 // ============================================================
 
 /**
- * Téléverse un fichier image vers Firebase Storage et retourne son URL publique.
- * Remplace la route POST /api/upload du serveur Express + Multer.
+ * Convertit un fichier image en base64 pour le stocker directement dans Firestore.
+ * Gratuit et sans limitation (pas besoin de Firebase Storage payant).
  */
 export const uploadImage = async (file, path) => {
   if (!file) return null;
-  const storageRef = ref(storage, `${path}/${Date.now()}_${file.name}`);
-  const snapshot = await uploadBytes(storageRef, file);
-  const downloadURL = await getDownloadURL(snapshot.ref);
-  return downloadURL;
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      // Format: data:image/png;base64,iVBORw0KGgo...
+      resolve(reader.result);
+    };
+    reader.onerror = (error) => {
+      console.error('Erreur lecture fichier:', error);
+      reject(error);
+    };
+    reader.readAsDataURL(file);
+  });
 };
 
 /**
- * Supprime une image de Firebase Storage à partir de son URL.
+ * Supprime une image (base64) - pas d'action nécessaire car stockée dans Firestore.
+ * La suppression se fait en mettant le champ image_url à null.
  */
 export const deleteImage = async (imageUrl) => {
-  if (!imageUrl || !imageUrl.includes('firebasestorage')) return;
-  try {
-    const imageRef = ref(storage, imageUrl);
-    await deleteObject(imageRef);
-  } catch (err) {
-    console.warn('Impossible de supprimer l\'image:', err.message);
-  }
+  // Les images base64 sont stockées dans Firestore, pas de suppression physique nécessaire
+  return;
 };
 
 // ============================================================
