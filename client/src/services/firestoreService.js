@@ -405,10 +405,15 @@ export const getOrCreateUser = async (firebaseUser) => {
 
 /** Vérifie si un utilisateur Firebase est un administrateur. */
 export const checkIfAdmin = async (uid) => {
-  const q = query(collection(db, 'admins'), where('firebase_uid', '==', uid));
-  const snapshot = await getDocs(q);
-  if (snapshot.empty) return null;
-  return { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
+  try {
+    const adminRef = doc(db, 'admins', uid);
+    const adminSnap = await getDoc(adminRef);
+    if (!adminSnap.exists()) return null;
+    return { id: adminSnap.id, ...adminSnap.data() };
+  } catch (error) {
+    console.error('Erreur checkIfAdmin:', error);
+    return null;
+  }
 };
 
 /** Crée un compte admin dans Firestore (remplace le formulaire d'inscription admin). */
