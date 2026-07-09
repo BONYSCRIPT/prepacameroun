@@ -26,21 +26,46 @@ import { db, auth } from '../config/firebase';
 // ============================================================
 
 /**
- * Convertit un fichier image en base64 pour le stocker directement dans Firestore.
- * Gratuit et sans limitation (pas besoin de Firebase Storage payant).
+ * Redimensionne et convertit un fichier image en base64 pour le stocker dans Firestore.
+ * Limite la taille à 200px de largeur max pour éviter de dépasser la limite Firestore (1 Mo).
  */
 export const uploadImage = async (file, path) => {
   if (!file) return null;
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = () => {
-      // Format: data:image/png;base64,iVBORw0KGgo...
-      resolve(reader.result);
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 400;
+        const MAX_HEIGHT = 300;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        // Convertir en JPEG qualité 0.7 pour réduire la taille
+        resolve(canvas.toDataURL('image/jpeg', 0.7));
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
     };
-    reader.onerror = (error) => {
-      console.error('Erreur lecture fichier:', error);
-      reject(error);
-    };
+    reader.onerror = reject;
     reader.readAsDataURL(file);
   });
 };

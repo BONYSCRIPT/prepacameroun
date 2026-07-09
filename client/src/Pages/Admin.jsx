@@ -150,24 +150,32 @@ const Admin = () => {
       const adminData = JSON.parse(localStorage.getItem('adminData'));
       const adminId = adminData?.id || adminData?.firebase_uid;
 
-      if (!newPrepaImage) {
-        setPrepaImageError('L\'image est obligatoire');
+      if (!adminId) {
+        toast.error('Session admin expirée, veuillez vous reconnecter');
         return;
       }
 
-      await prepaSchema.validate({
-        nom: newPrepaName,
-        description: newPrepaDescription,
-        prix: newPrepaPrice,
-        auteur: adminId
-      }, { abortEarly: false });
+      if (!newPrepaName.trim()) {
+        setPrepaErrors({ nom: 'Le nom est requis' });
+        return;
+      }
+      if (!newPrepaDescription.trim()) {
+        setPrepaErrors({ description: 'La description est requise' });
+        return;
+      }
+      if (!newPrepaPrice) {
+        setPrepaErrors({ prix: 'Le prix est requis' });
+        return;
+      }
+
+      setPrepaErrors({});
 
       const newPrepa = await createPrepa({
         nom: newPrepaName,
         description: newPrepaDescription,
         prix: newPrepaPrice,
         adminId: adminId,
-        imageFile: newPrepaImage,
+        imageFile: newPrepaImage || null,
       });
 
       setPrepas([...prepas, newPrepa]);
@@ -181,15 +189,8 @@ const Admin = () => {
       toast.success('Préparation créée avec succès');
 
     } catch (error) {
-      if (error instanceof Yup.ValidationError) {
-        const errors = {};
-        error.inner.forEach(err => {
-          errors[err.path] = err.message;
-        });
-        setPrepaErrors(errors);
-      } else {
-        console.error('Erreur lors de la création de la prepa:', error);
-      }
+      console.error('Erreur lors de la création de la prepa:', error);
+      toast.error('Erreur lors de la création : ' + (error.message || 'Erreur inconnue'));
     }
   };
 
@@ -750,7 +751,7 @@ const Admin = () => {
           </Button>
           <Button
             onClick={handleCreatePrepa}
-            disabled={!newPrepaName.trim() || !newPrepaDescription.trim() || !newPrepaPrice || !newPrepaImage}
+            disabled={!newPrepaName.trim() || !newPrepaDescription.trim() || !newPrepaPrice}
             style={{
               backgroundColor: theme.primary,
               borderColor: theme.primary,
