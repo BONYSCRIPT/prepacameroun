@@ -13,8 +13,47 @@
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "is_published", "order": "ASCENDING" },
-        { "fieldPath": "created_at", "order": "DESCENDING" },
-        { "fieldPath": "__name__", "order": "ASCENDING" }
+        { "fieldPath": "created_at", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "lecons",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "discipline_id", "order": "ASCENDING" },
+        { "fieldPath": "numero_page", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "exercices",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "discipline_id", "order": "ASCENDING" },
+        { "fieldPath": "numero_page", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "anciens_sujets",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "discipline_id", "order": "ASCENDING" },
+        { "fieldPath": "numero_page", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "inscriptions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "user_id", "order": "ASCENDING" },
+        { "fieldPath": "statut", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "disciplines",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "prepa_concours_id", "order": "ASCENDING" },
+        { "fieldPath": "nom", "order": "ASCENDING" }
       ]
     }
   ],
