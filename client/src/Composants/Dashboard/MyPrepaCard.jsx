@@ -20,7 +20,8 @@ const MyPrepaCard = ({ inscription, onClick }) => {
         borderRadius: '8px'
     };
 
-    const { prepa_nom } = inscription;
+    const { nom, description, image_url, date_expiration } = inscription;
+    const prepa_nom = nom || inscription.prepa_nom || 'Sans nom';
     const [isMobile, setIsMobile] = useState(window.innerWidth < 992);
 
     // Détection de la taille de l'écran
@@ -92,24 +93,17 @@ const MyPrepaCard = ({ inscription, onClick }) => {
                 <div style={headerStyle}>
                     <MdLibraryBooks size={18} />
                     <span className={isMobile ? "fs-6" : "text-truncate"} style={{ maxWidth: '200px', color: 'white' }}>
-                        {prepa_nom || inscription.nom || 'Sans nom'}
+                        {prepa_nom}
                     </span>
                 </div>
                 <div className="p-3 pt-1">
                     <div className="d-flex align-items-center mb-2">
-                        <img
-                            src={inscription.prepa_image_url ? (inscription.prepa_image_url.startsWith('/uploads') ? `${import.meta.env.VITE_API_URL}${inscription.prepa_image_url}` : inscription.prepa_image_url) : 'https://via.placeholder.com/80x60?text=Prepa'}
-                            alt={inscription.prepa_nom}
-                            className="rounded me-3 border"
-                            loading="lazy"
-                            style={{ width: '80px', height: '60px', objectFit: 'cover', flexShrink: 0 }}
-                            onError={(e) => { e.target.src = "https://placehold.co/80x60?text=Image"; }}
-                        />
                         <div className="flex-grow-1 overflow-hidden">
-                            <small className="text-muted d-block text-truncate">
-                                {inscription.prepa_description || "Pas de description"}
+                            <h6 className="mb-1 text-truncate">{prepa_nom}</h6>
+                            <small className="text-muted">
+                                {date_expiration ? `Valide jusqu'au ${new Date(date_expiration.toDate ? date_expiration.toDate() : date_expiration).toLocaleDateString('fr-FR')}` : 'Inscription active'}
                             </small>
-                            <span className="badge bg-success" style={{ fontSize: '0.7rem' }}>Inscrit</span>
+                            <span className="badge bg-success mt-1" style={{ fontSize: '0.7rem' }}>Inscrit</span>
                         </div>
                     </div>
                     <Link

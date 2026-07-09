@@ -16,8 +16,10 @@ const Validite = ({ userPrepas, selectedPrepa, onPrepaSelect }) => {
     }, []);
 
     const handlePrepaChange = (e) => {
-        const selected = userPrepas.find(prepa => prepa.id === e.target.value);
-        onPrepaSelect(selected);
+        const selected = userPrepas.find(prepa => String(prepa.prepa_id) === String(e.target.value));
+        if (selected) {
+            onPrepaSelect(selected);
+        }
     };
 
     // Styles adaptés selon le mode d'affichage et la nouvelle charte graphique
@@ -81,7 +83,7 @@ const Validite = ({ userPrepas, selectedPrepa, onPrepaSelect }) => {
             <select
                 className="form-select"
                 style={selectStyle}
-                value={selectedPrepa ? selectedPrepa.id : ''}
+                value={selectedPrepa ? selectedPrepa.prepa_id : ''}
                 onChange={handlePrepaChange}
                 onFocus={(e) => {
                     e.currentTarget.style.borderColor = theme.colors.primary;
@@ -94,7 +96,7 @@ const Validite = ({ userPrepas, selectedPrepa, onPrepaSelect }) => {
             >
                 <option value="">Sélectionnez une préparation</option>
                 {userPrepas.map(prepa => (
-                    <option key={prepa.id} value={prepa.id}>{prepa.prepa_nom}</option>
+                    <option key={prepa.prepa_id} value={prepa.prepa_id}>{prepa.nom || prepa.prepa_nom || 'Sans nom'}</option>
                 ))}
             </select>
             
