@@ -1,7 +1,7 @@
 import { useNavigate, Link } from 'react-router-dom';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../config/firebase';
 import { createAdmin } from '../services/firestoreService';
 import 'bootstrap/dist/css/bootstrap.css';
@@ -110,12 +110,31 @@ const AdminInscription = () => {
   const handleSubmit = async (values, { setSubmitting, setErrors }) => {
     setIsLoading(true);
     try {
-      console.log('Sending data to server:', values);
-      // Créer l'utilisateur Firebase Auth
-      const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
-      const firebaseUser = userCredential.user;
+      let firebaseUser;
+      try {
+        // Essayer de créer le compte Firebase
+        const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
+        firebaseUser = userCredential.user;
+      } catch (createError) {
+        // Si l'email existe déjà, essayer de connecter avec le mot de passe fourni
+        if (createError.code === 'auth/email-already-in-use') {
+          try {
+            const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
+            firebaseUser = userCredential.user;
+          } catch (loginError) {
+            // Mot de passe incorrect pour un compte existant
+            setErrors({ submit: 'Cet email est déjà utilisé. Veuillez utiliser un autre email ou vous connecter avec le bon mot de passe.' });
+            toast.error('Email déjà utilisé. Mot de passe incorrect.');
+            setIsLoading(false);
+            setSubmitting(false);
+            return;
+          }
+        } else {
+          throw createError;
+        }
+      }
 
-      // Créer le document admin dans Firestore
+      // Créer le document admin dans Firestore (ou mettre à jour si déjà existant)
       await createAdmin({
         username: values.username,
         email: values.email,
@@ -123,7 +142,6 @@ const AdminInscription = () => {
         role: values.role || 'admin'
       });
 
-      console.log('Registration successful, navigating to login page');
       toast.success('Inscription réussie ! Vous pouvez maintenant vous connecter.');
       navigate('/admin/connexion');
     } catch (error) {
