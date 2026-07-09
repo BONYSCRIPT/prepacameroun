@@ -67,6 +67,7 @@ const ZitopayButton = ({
       if (data.success) {
         toast.success('✅ Paiement simulé avec succès !');
         window.postMessage({ type: 'payment_success', prepaId, ref: transactionRef }, '*');
+        window.dispatchEvent(new CustomEvent('refreshInscriptions'));
         setTimeout(() => setShowModal(false), 1500);
       } else {
         toast.error('Erreur lors de la simulation');
