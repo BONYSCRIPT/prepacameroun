@@ -91,15 +91,14 @@ const MyPrepaCard = ({ inscription, onClick }) => {
             <div className="w-100">
                 <div style={headerStyle}>
                     <MdLibraryBooks size={18} />
-                    <span className={isMobile ? "fs-6" : "text-truncate"} style={{ maxWidth: '200px', color: 'white' }}>
+                    <span className={isMobile ? "fs-6" : "text-truncate"} style={{ maxWidth: '160px', color: 'white', flex: 1 }}>
                         {prepa_nom}
+                    </span>
+                    <span className="badge ms-auto" style={{ backgroundColor: '#be0050', color: 'white', fontSize: '0.65rem', fontWeight: 600, borderRadius: '12px', padding: '4px 8px' }}>
+                        Inscrit
                     </span>
                 </div>
                 <div className="p-3 pt-1">
-                    <div className="d-flex align-items-center mb-2">
-                        <small className="text-muted">{prepa_nom}</small>
-                        <span className="badge bg-success ms-2" style={{ fontSize: '0.7rem' }}>Inscrit</span>
-                    </div>
                     <Link
                         to={`/user/prepa/${inscription.prepa_id}`}
                         className="btn"
