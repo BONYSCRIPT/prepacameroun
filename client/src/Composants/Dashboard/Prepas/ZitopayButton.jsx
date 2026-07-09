@@ -44,23 +44,9 @@ const ZitopayButton = ({
   const [zitopayUrlParams, setZitopayUrlParams] = useState(null);
   const [transactionRef, setTransactionRef] = useState(null);
   const isLocalEnv = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-
-  const simulateLocalPayment = async () => {
-    if (!transactionRef) return;
-    try {
-      const baseUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8005';
-      toast.info('⏳ Simulation IPN en cours (Bypass)...');
-      await fetch(`${baseUrl}/api/payment/zitopay/notification`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ref: transactionRef, status: 'success', amount: prix })
-      });
-      window.postMessage({ type: 'payment_success', prepaId: prepaId, ref: transactionRef }, '*');
-    } catch (err) {
-      console.error(err);
-      toast.error('Erreur lors de la simulation IPN');
-    }
-  };
+  const API_BASE = isLocalEnv 
+    ? (import.meta.env.VITE_API_URL || 'http://127.0.0.1:8005')
+    : ''; // En production, utiliser l'URL relative (même domaine Vercel)
 
   const handleOpenPayment = async (e) => {
     if (e) {
@@ -77,18 +63,20 @@ const ZitopayButton = ({
     setShowModal(true);
 
     try {
-      const baseUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8005';
-      const token = localStorage.getItem('userToken');
+      const userEmail = user?.email || '';
+      const userName = user?.username || user?.displayName || userEmail.split('@')[0] || 'Utilisateur';
 
-      const response = await fetch(`${baseUrl}/api/payment/zitopay/init`, {
+      const response = await fetch(`${API_BASE}/api/init`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           prepaId: prepaId,
-          amount: prix
+          montant: prix,
+          userEmail: userEmail,
+          userId: user.id,
+          nom: `Prépa ${prepaNom}`
         })
       });
 
@@ -98,13 +86,13 @@ const ZitopayButton = ({
         throw new Error(data.message || 'Erreur lors de l\'initialisation de la transaction');
       }
 
-      const reference = data.reference;
+      const reference = data.data?.reference || data.reference;
       setTransactionRef(reference);
       const receiver = import.meta.env.VITE_ZITOPAY_USERNAME || 'prepacameroun';
       const note = `Inscription PrepaCameroun: ${prepaNom}`;
 
-      const successUrl = `${baseUrl}/api/payment/zitopay/success`;
-      const cancelUrl = `${baseUrl}/api/payment/zitopay/cancel`;
+      const successUrl = `${window.location.origin}/api/verify?status=success&reference=${reference}`;
+      const cancelUrl = `${window.location.origin}/api/verify?status=cancel&reference=${reference}`;
 
       const zitopayUrl = new URL('https://zitopay.africa/sci/');
       zitopayUrl.searchParams.append('receiver', receiver);
@@ -183,10 +171,7 @@ const ZitopayButton = ({
           )}
           {isLocalEnv && zitopayUrlParams && (
             <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', backgroundColor: '#fff3cd', padding: '10px 15px', zIndex: 5, borderBottom: '1px solid #ffeeba', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ color: '#856404', fontSize: '0.9rem', fontWeight: 600 }}>Page Zitopay Blanche (Local) ?</span>
-              <button onClick={simulateLocalPayment} className="btn btn-warning btn-sm" style={{ fontWeight: 700 }}>
-                Forcer le Paiement (Test)
-              </button>
+              <span style={{ color: '#856404', fontSize: '0.9rem', fontWeight: 600 }}>Environnement local</span>
             </div>
           )}
           {zitopayUrlParams ? (

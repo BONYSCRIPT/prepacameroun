@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
 import { MdArrowLeft, MdArrowRight } from 'react-icons/md';
+import { getDoc, doc } from 'firebase/firestore';
+import { db } from '../config/firebase';
 
 const Page = ({
     content,
@@ -24,19 +25,16 @@ const Page = ({
                 setError(null);
                 setPageContent(null);
                 
-                const token = localStorage.getItem('userToken');
-                const headers = { 'Authorization': `Bearer ${token}` };
-                let url;
-
+                let collectionName;
                 switch (content.type) {
                     case 'course':
-                        url = `/api/lecons/${content.id}`;
+                        collectionName = 'lecons';
                         break;
                     case 'exercise':
-                        url = `/api/exercices/${content.id}`;
+                        collectionName = 'exercices';
                         break;
                     case 'pastExam':
-                        url = `/api/anciens-sujets/${content.id}`;
+                        collectionName = 'anciens_sujets';
                         break;
                     default:
                         setLoading(false);
@@ -46,8 +44,13 @@ const Page = ({
                 }
 
                 try {
-                    const response = await axios.get(url, { headers });
-                    setPageContent(response.data);
+                    const docRef = doc(db, collectionName, content.id);
+                    const docSnap = await getDoc(docRef);
+                    if (docSnap.exists()) {
+                        setPageContent({ id: docSnap.id, ...docSnap.data() });
+                    } else {
+                        setError("Contenu non trouvé");
+                    }
                     setLoading(false);
                 } catch (error) {
                     console.error("Erreur lors de la récupération du contenu:", error);
