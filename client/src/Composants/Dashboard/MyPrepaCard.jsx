@@ -94,7 +94,7 @@ const MyPrepaCard = ({ inscription, onClick }) => {
                     <span className={isMobile ? "fs-6" : "text-truncate"} style={{ maxWidth: '160px', color: 'white', flex: 1 }}>
                         {prepa_nom}
                     </span>
-                    <span className="badge ms-auto" style={{ backgroundColor: '#be0050', color: 'white', fontSize: '0.65rem', fontWeight: 600, borderRadius: '12px', padding: '4px 8px' }}>
+                    <span className="badge ms-auto" style={{ backgroundColor: '#D4AF37', color: '#333', fontSize: '0.65rem', fontWeight: 700, borderRadius: '12px', padding: '4px 8px' }}>
                         Inscrit
                     </span>
                 </div>

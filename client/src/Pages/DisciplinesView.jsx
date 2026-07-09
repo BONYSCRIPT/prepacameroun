@@ -8,7 +8,7 @@ import { useUserAuth } from '../contexts/useUserAuth';
 import { MdArrowBack, MdMenu } from 'react-icons/md';
 import { getUserInscriptions, getDisciplinesByPrepa } from '../services/firestoreService';
 import { toast } from 'react-toastify';
-import theme from '../utils/theme'; // Importer le thème
+import theme from '../utils/theme';
 
 const DisciplinesView = () => {
   // États
@@ -41,10 +41,11 @@ const DisciplinesView = () => {
   // Effet pour récupérer les préparations de l'utilisateur
   useEffect(() => {
     const fetchPrepas = async () => {
-      if (!user) return;
+      if (!user?.id) return;
       try {
         setLoading(true);
-        const inscriptions = await getUserInscriptions();
+        // 🔥 CORRECTION : passer l'userId à getUserInscriptions
+        const inscriptions = await getUserInscriptions(user.id);
         // Filtrer les inscriptions actives
         const activePrepas = inscriptions.filter(i => i.statut === 'active');
         setPrepas(activePrepas);
@@ -70,23 +71,24 @@ const DisciplinesView = () => {
   // Effet pour récupérer les disciplines de la préparation sélectionnée
   useEffect(() => {
     const fetchDisciplines = async () => {
-      if (selectedPrepa) {
-        try {
-          setLoading(true);
-          const disciplinesData = await getDisciplinesByPrepa(selectedPrepa);
-          setDisciplines(disciplinesData);
-          setLoading(false);
-        } catch (error) {
-          console.error("Erreur lors de la récupération des disciplines:", error);
-          setDisciplines([]);
-          setError("Impossible de charger les disciplines. Veuillez réessayer plus tard.");
-          setLoading(false);
-          toast.error("Erreur lors du chargement des disciplines");
-        }
+      if (!selectedPrepa) return;
+      try {
+        setLoading(true);
+        const disciplinesData = await getDisciplinesByPrepa(selectedPrepa);
+        setDisciplines(disciplinesData);
+        setLoading(false);
+      } catch (error) {
+        console.error("Erreur lors de la récupération des disciplines:", error);
+        setDisciplines([]);
+        setError("Impossible de charger les disciplines. Veuillez réessayer plus tard.");
+        setLoading(false);
+        toast.error("Erreur lors du chargement des disciplines");
       }
     };
 
-    fetchDisciplines();
+    if (selectedPrepa) {
+      fetchDisciplines();
+    }
   }, [selectedPrepa]);
 
   // Fonction pour gérer le clic sur un bouton de préparation
@@ -108,29 +110,6 @@ const DisciplinesView = () => {
       <div className="d-flex justify-content-between align-items-center p-3 bg-white border rounded mb-3"
         style={{ boxShadow: theme.shadows.card }}>
         <h6 className="mb-0" style={{ color: theme.colors.dark, fontWeight: 600 }}>Disciplines</h6>
-        {isMobile && (
-          <button
-            className="btn btn-sm"
-            style={{
-              backgroundColor: theme.colors.secondary,
-              color: 'white',
-              borderRadius: theme.borderRadius.default,
-              transition: theme.transitions.default,
-              boxShadow: theme.shadows.button
-            }}
-            onClick={toggleSidebar}
-            onMouseOver={(e) => {
-              e.currentTarget.style.backgroundColor = theme.colors.secondaryDark;
-              e.currentTarget.style.boxShadow = theme.shadows.buttonHover;
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.backgroundColor = theme.colors.secondary;
-              e.currentTarget.style.boxShadow = theme.shadows.button;
-            }}
-          >
-            <MdMenu className="me-1" /> Préparations
-          </button>
-        )}
       </div>
 
       {loading ? (
@@ -196,14 +175,6 @@ const DisciplinesView = () => {
             boxShadow: theme.shadows.button,
             border: 'none'
           }}
-          onMouseOver={(e) => {
-            e.currentTarget.style.backgroundColor = theme.colors.primaryDark;
-            e.currentTarget.style.boxShadow = theme.shadows.buttonHover;
-          }}
-          onMouseOut={(e) => {
-            e.currentTarget.style.backgroundColor = theme.colors.primary;
-            e.currentTarget.style.boxShadow = theme.shadows.button;
-          }}
         >
           <MdArrowBack className="me-1" /> Retour
         </Link>
@@ -211,13 +182,6 @@ const DisciplinesView = () => {
           <button
             className="btn-close"
             onClick={() => setShowSidebar(false)}
-            style={{ transition: theme.transitions.default }}
-            onMouseOver={(e) => {
-              e.currentTarget.style.transform = 'scale(1.1)';
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.transform = 'scale(1)';
-            }}
           ></button>
         )}
       </div>
@@ -248,7 +212,6 @@ const DisciplinesView = () => {
               prepa={prepa}
               isSelected={selectedPrepa === prepa.prepa_id}
               onClick={() => handlePrepaClick(prepa.prepa_id)}
-            // Les couleurs seront gérées dans le composant PrepaBtn
             />
           ))
         )}
@@ -293,7 +256,6 @@ const DisciplinesView = () => {
         </div>
       </div>
 
-      {/* CSS pour la version mobile */}
       <style>{`
         @media (max-width: 767.98px) {
           .sidebar {
