@@ -18,27 +18,27 @@ const ZitopayButton = ({
   const { user } = useUserAuth();
 
   useEffect(() => {
-    const handleMessage = (event) => {
-      if (event.data?.type === 'payment_success' && String(event.data?.prepaId) === String(prepaId)) {
-        console.log('Signal de paiement reçu pour:', prepaId);
-        setShowModal(false);
-
-        toast.success('Paiement réussi !');
-
-        // Déclencher un refresh des notifications dans la cloche
-        window.dispatchEvent(new CustomEvent('refreshNotifications'));
-
-        if (onSuccess) {
-          onSuccess(event.data);
-        }
-      } else if (event.data?.type === 'payment_cancel') {
-        setShowModal(false);
-        toast.info('Paiement annulé');
+    const handlePaymentSuccess = () => {
+      console.log('Signal de paiement reçu pour:', prepaId);
+      setShowModal(false);
+      toast.success('Paiement réussi !');
+      window.dispatchEvent(new CustomEvent('refreshNotifications'));
+      if (onSuccess) {
+        onSuccess({ prepaId });
       }
     };
 
-    window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
+    const handlePaymentCancel = () => {
+      setShowModal(false);
+      toast.info('Paiement annulé');
+    };
+
+    window.addEventListener('payment_success', handlePaymentSuccess);
+    window.addEventListener('payment_cancel', handlePaymentCancel);
+    return () => {
+      window.removeEventListener('payment_success', handlePaymentSuccess);
+      window.removeEventListener('payment_cancel', handlePaymentCancel);
+    };
   }, [prepaId, onSuccess]);
 
   const [zitopayUrlParams, setZitopayUrlParams] = useState(null);
@@ -66,7 +66,7 @@ const ZitopayButton = ({
       const data = await response.json();
       if (data.success) {
         toast.success('✅ Paiement simulé avec succès !');
-        window.postMessage({ type: 'payment_success', prepaId, ref: transactionRef }, '*');
+        window.dispatchEvent(new CustomEvent('payment_success', { detail: { prepaId, ref: transactionRef } }));
         window.dispatchEvent(new CustomEvent('refreshInscriptions'));
         setTimeout(() => setShowModal(false), 1500);
       } else {

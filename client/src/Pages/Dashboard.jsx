@@ -324,17 +324,15 @@ const Dashboard = () => {
   const isLoadingGlobal = loadingPrepas || loadingUserPrepas;
   const globalError = errorPrepas ? 'Erreur lors du chargement des données' : null;
 
-  // ✅ Listener postMessage : rafraîchir automatiquement les inscriptions après paiement
+  // ✅ Listener CustomEvent : rafraîchir automatiquement les inscriptions après paiement
   useEffect(() => {
-    const handlePaymentSuccess = (event) => {
-      if (event.data?.type === 'payment_success') {
-        console.log('[Dashboard] Paiement confirmé, rechargement des inscriptions...');
-        toast.success('🎉 Inscription activée avec succès !');
-        queryClient.invalidateQueries({ queryKey: ['userPrepas'] });
-      }
+    const handlePaymentSuccess = () => {
+      console.log('[Dashboard] Paiement confirmé, rechargement des inscriptions...');
+      toast.success('🎉 Inscription activée avec succès !');
+      queryClient.invalidateQueries({ queryKey: ['userPrepas'] });
     };
-    window.addEventListener('message', handlePaymentSuccess);
-    return () => window.removeEventListener('message', handlePaymentSuccess);
+    window.addEventListener('payment_success', handlePaymentSuccess);
+    return () => window.removeEventListener('payment_success', handlePaymentSuccess);
   }, [queryClient]);
 
   // Rafraîchir après un paiement réussi via query params
