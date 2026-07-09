@@ -326,13 +326,18 @@ const Dashboard = () => {
 
   // ✅ Listener CustomEvent : rafraîchir automatiquement les inscriptions après paiement
   useEffect(() => {
-    const handlePaymentSuccess = () => {
+    const handlePaymentSuccess = async () => {
       console.log('[Dashboard] Paiement confirmé, rechargement des inscriptions...');
       toast.success('🎉 Inscription activée avec succès !');
-      queryClient.invalidateQueries({ queryKey: ['userPrepas'] });
+      // Forcer le rechargement immédiat des inscriptions
+      await queryClient.refetchQueries({ queryKey: ['userPrepas'] });
     };
     window.addEventListener('payment_success', handlePaymentSuccess);
-    return () => window.removeEventListener('payment_success', handlePaymentSuccess);
+    window.addEventListener('refreshInscriptions', handlePaymentSuccess);
+    return () => {
+      window.removeEventListener('payment_success', handlePaymentSuccess);
+      window.removeEventListener('refreshInscriptions', handlePaymentSuccess);
+    };
   }, [queryClient]);
 
   // Rafraîchir après un paiement réussi via query params
