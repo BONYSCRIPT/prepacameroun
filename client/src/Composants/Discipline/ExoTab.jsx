@@ -104,12 +104,13 @@ const ExoTab = ({ disciplineId }) => {
       }
 
       try {
-        const updatedExercice = {
-          ...selectedExercice,
+        await updateExercice(selectedExercice.id, {
+          titre: selectedExercice.titre,
           enonce: enonceContent,
-          corrige: corrigeContent
-        };
-        await updateExercice(selectedExercice.id, updatedExercice);
+          corrige: corrigeContent,
+          numeroPage: selectedExercice.numero_page
+        });
+        const updatedExercice = { ...selectedExercice, enonce: enonceContent, corrige: corrigeContent };
         const updatedExercices = exercices.map(exercice =>
           exercice.id === updatedExercice.id ? updatedExercice : exercice
         );
@@ -117,6 +118,7 @@ const ExoTab = ({ disciplineId }) => {
         setTitleError('');
         toast.success('Exercice mis à jour avec succès');
       } catch (error) {
+        console.error('Erreur sauvegarde exercice:', error);
         toast.error('Erreur lors de la sauvegarde de l\'exercice');
       }
     }

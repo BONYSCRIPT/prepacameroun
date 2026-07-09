@@ -129,12 +129,14 @@ const AncienSujetTab = ({ disciplineId }) => {
       }
 
       try {
-        const updatedSujet = {
-          ...selectedSujet,
+        await updateAncienSujet(selectedSujet.id, {
+          titre: selectedSujet.titre,
+          annee: selectedSujet.annee,
           contenu: contenuContent,
-          corrige: corrigeContent
-        };
-        await updateAncienSujet(selectedSujet.id, updatedSujet);
+          corrige: corrigeContent,
+          numeroPage: selectedSujet.numero_page
+        });
+        const updatedSujet = { ...selectedSujet, contenu: contenuContent, corrige: corrigeContent };
         const updatedSujets = anciensSujets.map(sujet =>
           sujet.id === updatedSujet.id ? updatedSujet : sujet
         );

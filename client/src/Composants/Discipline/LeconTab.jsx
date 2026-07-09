@@ -94,11 +94,12 @@ const LeconTab = ({ disciplineId }) => {
       try {
         await lessonSchema.validate({ titre: selectedLesson.titre });
 
-        const updatedLesson = {
-          ...selectedLesson,
-          contenu: editorContent
-        };
-        await updateLecon(selectedLesson.id, updatedLesson);
+        await updateLecon(selectedLesson.id, {
+          titre: selectedLesson.titre,
+          contenu: editorContent,
+          numeroPage: selectedLesson.numero_page
+        });
+        const updatedLesson = { ...selectedLesson, contenu: editorContent };
         const updatedLessons = lessons.map(lesson =>
           lesson.id === updatedLesson.id ? updatedLesson : lesson
         );
@@ -108,6 +109,7 @@ const LeconTab = ({ disciplineId }) => {
         if (error instanceof Yup.ValidationError) {
           toast.error(error.message);
         } else {
+          console.error('Erreur sauvegarde:', error);
           toast.error('Erreur lors de la sauvegarde de la leçon');
         }
       }
