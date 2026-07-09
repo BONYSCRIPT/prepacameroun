@@ -39,9 +39,8 @@ export const AdminAuthProvider = ({ children }) => {
             });
             localStorage.setItem('adminData', JSON.stringify(adminData));
           } else {
-            // Utilisateur Firebase mais pas admin → déconnexion
-            console.warn('Utilisateur non administrateur');
-            await signOutUser();
+            // 🔥 CORRECTION : NE PAS déconnecter Firebase, juste ne pas définir admin
+            console.log('Utilisateur Firebase connecté mais pas admin');
             setAdmin(null);
             localStorage.removeItem('adminData');
           }
@@ -90,7 +89,7 @@ export const AdminAuthProvider = ({ children }) => {
           localStorage.setItem('adminData', JSON.stringify(adminData));
           return { success: true };
         } else {
-          await signOutUser();
+          // 🔥 CORRECTION : NE PAS déconnecter Firebase
           return { success: false, error: 'Accès non autorisé' };
         }
       }
@@ -119,7 +118,7 @@ export const AdminAuthProvider = ({ children }) => {
           localStorage.setItem('adminData', JSON.stringify(adminData));
           return { success: true };
         } else {
-          await signOutUser();
+          // 🔥 CORRECTION : NE PAS déconnecter Firebase
           return { success: false, error: 'Accès non autorisé' };
         }
       }

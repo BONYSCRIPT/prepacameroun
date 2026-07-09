@@ -2,9 +2,6 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import { useAdminAuth } from '../contexts/useAdminAuth';
-import { checkIfAdmin } from '../services/firestoreService';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '../config/firebase';
 import 'bootstrap/dist/css/bootstrap.css';
 import AdminNavbar from '../Composants/Admin/AdminNavbar';
 import { useState } from 'react';
@@ -67,20 +64,15 @@ const AdminConnexion = () => {
   const handleSubmit = async (values, { setSubmitting, setErrors }) => {
     setIsLoading(true);
     try {
-      // Connexion Firebase Auth
-      const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
-      const firebaseUser = userCredential.user;
+      // 🔥 CORRECTION : utiliser la fonction login du contexte AdminAuthContext
+      const result = await login(values.email, values.password);
 
-      // Vérifier si l'utilisateur est admin dans Firestore
-      const adminData = await checkIfAdmin(firebaseUser.uid);
-
-      if (adminData) {
-        login({ token: await firebaseUser.getIdToken(), adminId: firebaseUser.uid, role: adminData.role || 'admin' });
+      if (result.success) {
         toast.success('Connexion réussie !');
         navigate('/admin/dashboard');
       } else {
-        setErrors({ submit: 'Vous n\'êtes pas administrateur.' });
-        toast.error('Vous n\'êtes pas administrateur.');
+        setErrors({ submit: result.error });
+        toast.error(result.error);
       }
     } catch (error) {
       const errorMessage = error.message || 'Erreur de connexion au serveur.';
