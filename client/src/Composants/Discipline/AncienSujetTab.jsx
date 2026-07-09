@@ -26,6 +26,7 @@ const ancienSujetSchema = Yup.object().shape({
 const AncienSujetTab = ({ disciplineId }) => {
   const [anciensSujets, setAnciensSujets] = useState([]);
   const [selectedSujet, setSelectedSujet] = useState(null);
+  const [activeSujetTab, setActiveSujetTab] = useState('contenu');
   const [showModal, setShowModal] = useState(false);
   const [newSujetTitle, setNewSujetTitle] = useState('');
   const [newSujetAnnee, setNewSujetAnnee] = useState(new Date().getFullYear());
@@ -273,16 +274,24 @@ const AncienSujetTab = ({ disciplineId }) => {
                 </div>
 
                 <div className="flex-grow-1 p-3" style={{ overflowY: 'auto' }}>
-                  <ul className="nav nav-tabs" id="sujetTab" role="tablist">
+                  <ul className="nav nav-tabs" role="tablist">
                     <li className="nav-item" role="presentation">
-                      <button className="nav-link active" id="contenu-tab" data-bs-toggle="tab" data-bs-target="#contenu-tab-pane" type="button" role="tab" aria-controls="contenu-tab-pane" aria-selected="true">Contenu</button>
+                      <button 
+                        className={`nav-link ${activeSujetTab === 'contenu' ? 'active' : ''}`}
+                        onClick={() => setActiveSujetTab('contenu')}
+                        type="button" role="tab"
+                      >Contenu</button>
                     </li>
                     <li className="nav-item" role="presentation">
-                      <button className="nav-link" id="corrige-tab" data-bs-toggle="tab" data-bs-target="#corrige-tab-pane" type="button" role="tab" aria-controls="corrige-tab-pane" aria-selected="false">Corrigé</button>
+                      <button 
+                        className={`nav-link ${activeSujetTab === 'corrige' ? 'active' : ''}`}
+                        onClick={() => setActiveSujetTab('corrige')}
+                        type="button" role="tab"
+                      >Corrigé</button>
                     </li>
                   </ul>
-                  <div className="tab-content mt-3" id="sujetTabContent" style={{ height: 'calc(100% - 50px)' }}>
-                    <div className="tab-pane fade show active h-100" id="contenu-tab-pane" role="tabpanel" aria-labelledby="contenu-tab" tabIndex="0">
+                  <div className="mt-3" style={{ height: 'calc(100% - 50px)' }}>
+                    {activeSujetTab === 'contenu' && (
                       <ReactQuill
                         value={contenuContent}
                         onChange={handleContenuChange}
@@ -301,8 +310,8 @@ const AncienSujetTab = ({ disciplineId }) => {
                         }}
                         style={{ height: 'calc(100% - 20px)' }}
                       />
-                    </div>
-                    <div className="tab-pane fade h-100" id="corrige-tab-pane" role="tabpanel" aria-labelledby="corrige-tab" tabIndex="0">
+                    )}
+                    {activeSujetTab === 'corrige' && (
                       <ReactQuill
                         value={corrigeContent}
                         onChange={handleCorrigeChange}
@@ -321,7 +330,7 @@ const AncienSujetTab = ({ disciplineId }) => {
                         }}
                         style={{ height: 'calc(100% - 20px)' }}
                       />
-                    </div>
+                    )}
                   </div>
                 </div>
               </>
