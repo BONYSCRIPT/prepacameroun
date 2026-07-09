@@ -355,7 +355,7 @@ export const deleteAncienSujet = async (sujetId) => {
 // Remplace : /api/inscriptions/user/inscriptions, /api/inscriptions/check-and-update
 // ============================================================
 
-/** Récupère les inscriptions actives d'un utilisateur. */
+/** Récupère les inscriptions actives d'un utilisateur avec les infos de la préparation. */
 export const getUserInscriptions = async (userId) => {
   const now = Timestamp.now();
   const q = query(
@@ -377,11 +377,32 @@ export const getUserInscriptions = async (userId) => {
   });
   if (hasExpired) await batch.commit();
 
-  // Re-filtrer pour retourner uniquement les actives non-expirées
-  return inscriptions.filter(ins => {
+  // Filtrer les actives non-expirées
+  const activeInscriptions = inscriptions.filter(ins => {
     if (!ins.date_expiration) return false;
     return ins.date_expiration.toDate() > new Date();
   });
+
+  // Enrichir chaque inscription avec les données de la préparation (nom, description, image_url)
+  const enriched = await Promise.all(activeInscriptions.map(async (ins) => {
+    try {
+      const prepaDoc = await getDoc(doc(db, 'prepa_concours', ins.prepa_id));
+      if (prepaDoc.exists()) {
+        const prepaData = prepaDoc.data();
+        return {
+          ...ins,
+          nom: prepaData.nom || 'Sans nom',
+          description: prepaData.description || '',
+          image_url: prepaData.image_url || null
+        };
+      }
+    } catch (e) {
+      console.warn(`Impossible de charger la prépa ${ins.prepa_id}:`, e);
+    }
+    return { ...ins, nom: 'Sans nom', description: '', image_url: null };
+  }));
+
+  return enriched;
 };
 
 /** Vérifie si un utilisateur est inscrit à une préparation spécifique. */

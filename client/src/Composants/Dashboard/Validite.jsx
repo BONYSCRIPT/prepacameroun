@@ -58,11 +58,16 @@ const Validite = ({ userPrepas, selectedPrepa, onPrepaSelect }) => {
         fontWeight: 500
     };
 
-    // Formatage des dates avec gestion des erreurs
-    const formatDate = (dateString) => {
-        if (!dateString) return '-';
+    // Formatage des dates (Timestamp Firestore ou string)
+    const formatDate = (dateValue) => {
+        if (!dateValue) return '-';
         try {
-            return new Date(dateString).toLocaleDateString();
+            // Si c'est un Timestamp Firestore (objet avec toDate())
+            if (dateValue.toDate && typeof dateValue.toDate === 'function') {
+                return dateValue.toDate().toLocaleDateString('fr-FR');
+            }
+            // Si c'est une string ou un Date
+            return new Date(dateValue).toLocaleDateString('fr-FR');
         } catch (error) {
             console.error('Erreur de formatage de date:', error);
             return '-';
