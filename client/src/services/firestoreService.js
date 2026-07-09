@@ -164,6 +164,10 @@ export const deletePrepa = async (prepaId) => {
 
 /** Récupère toutes les disciplines d'une préparation. */
 export const getDisciplinesByPrepa = async (prepaId) => {
+  if (!prepaId) {
+    console.warn('getDisciplinesByPrepa: prepaId est undefined');
+    return [];
+  }
   const q = query(
     collection(db, 'disciplines'),
     where('prepa_concours_id', '==', prepaId),

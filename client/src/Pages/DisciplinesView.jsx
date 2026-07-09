@@ -41,6 +41,7 @@ const DisciplinesView = () => {
   // Effet pour récupérer les préparations de l'utilisateur
   useEffect(() => {
     const fetchPrepas = async () => {
+      if (!user) return;
       try {
         setLoading(true);
         const inscriptions = await getUserInscriptions();
@@ -50,7 +51,7 @@ const DisciplinesView = () => {
 
         // Sélectionner la préparation correspondant à l'identifiant de l'URL
         const prepaToSelect = activePrepas.find(prepa => prepa.prepa_id?.toString() === prepaId) || activePrepas[0];
-        if (prepaToSelect) {
+        if (prepaToSelect?.prepa_id) {
           setSelectedPrepa(prepaToSelect.prepa_id);
         }
 
