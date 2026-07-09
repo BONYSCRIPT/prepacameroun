@@ -6,10 +6,7 @@ import {
   auth
 } from '../config/firebase';
 import {
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  sendEmailVerification,
-  updateProfile
+  signInWithEmailAndPassword
 } from 'firebase/auth';
 import { checkIfAdmin } from '../services/firestoreService';
 import { toast } from 'react-toastify';
@@ -39,7 +36,6 @@ export const AdminAuthProvider = ({ children }) => {
             });
             localStorage.setItem('adminData', JSON.stringify(adminData));
           } else {
-            // 🔥 CORRECTION : NE PAS déconnecter Firebase, juste ne pas définir admin
             console.log('Utilisateur Firebase connecté mais pas admin');
             setAdmin(null);
             localStorage.removeItem('adminData');
@@ -76,24 +72,33 @@ export const AdminAuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       setLoading(true);
-      const result = await signInWithEmailAndPassword(auth, email, password);
 
-      if (result.user) {
-        const adminData = await checkIfAdmin(result.user.uid);
-        if (adminData) {
-          setAdmin({
-            id: result.user.uid,
-            ...adminData,
-            email: result.user.email
-          });
-          localStorage.setItem('adminData', JSON.stringify(adminData));
-          return { success: true };
-        } else {
-          // 🔥 CORRECTION : NE PAS déconnecter Firebase
-          return { success: false, error: 'Accès non autorisé' };
-        }
+      // 🔥 Vérifier si l'utilisateur est déjà connecté Firebase
+      const currentUser = auth.currentUser;
+      let userToCheck;
+
+      if (currentUser) {
+        // Déjà connecté → on utilise l'utilisateur actuel
+        userToCheck = currentUser;
+      } else {
+        // Pas connecté → on se connecte
+        const result = await signInWithEmailAndPassword(auth, email, password);
+        userToCheck = result.user;
       }
-      return { success: false, error: 'Email ou mot de passe incorrect' };
+
+      // Vérifier si admin
+      const adminData = await checkIfAdmin(userToCheck.uid);
+      if (adminData) {
+        setAdmin({
+          id: userToCheck.uid,
+          ...adminData,
+          email: userToCheck.email
+        });
+        localStorage.setItem('adminData', JSON.stringify(adminData));
+        return { success: true };
+      } else {
+        return { success: false, error: 'Accès non autorisé' };
+      }
     } catch (error) {
       return { success: false, error: error.message };
     } finally {
@@ -104,25 +109,34 @@ export const AdminAuthProvider = ({ children }) => {
   const loginWithGoogle = async () => {
     try {
       setLoading(true);
-      const result = await signInWithGoogle();
 
-      if (result.success) {
-        const adminData = await checkIfAdmin(result.user.uid);
-        if (adminData) {
-          setAdmin({
-            id: result.user.uid,
-            ...adminData,
-            email: result.user.email,
-            photoURL: result.user.photoURL
-          });
-          localStorage.setItem('adminData', JSON.stringify(adminData));
-          return { success: true };
-        } else {
-          // 🔥 CORRECTION : NE PAS déconnecter Firebase
-          return { success: false, error: 'Accès non autorisé' };
+      // 🔥 Vérifier si déjà connecté
+      const currentUser = auth.currentUser;
+      let userToCheck;
+
+      if (currentUser) {
+        userToCheck = currentUser;
+      } else {
+        const result = await signInWithGoogle();
+        if (!result.success) {
+          return { success: false, error: result.error };
         }
+        userToCheck = { uid: result.user.uid, email: result.user.email, photoURL: result.user.photoURL };
       }
-      return { success: false, error: result.error };
+
+      const adminData = await checkIfAdmin(userToCheck.uid);
+      if (adminData) {
+        setAdmin({
+          id: userToCheck.uid,
+          ...adminData,
+          email: userToCheck.email,
+          photoURL: userToCheck.photoURL
+        });
+        localStorage.setItem('adminData', JSON.stringify(adminData));
+        return { success: true };
+      } else {
+        return { success: false, error: 'Accès non autorisé' };
+      }
     } catch (error) {
       return { success: false, error: error.message };
     } finally {
