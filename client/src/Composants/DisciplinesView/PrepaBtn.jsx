@@ -32,7 +32,7 @@ const PrepaBtn = ({ prepa, isSelected, onClick }) => {
             aria-pressed={isSelected}
         >
             <MdLibraryBooks className="flex-shrink-0" />
-            <span className="text-truncate">{prepa.prepa_nom}</span>
+            <span className="text-truncate">{prepa.nom || prepa.prepa_nom || 'Sans nom'}</span>
         </button>
     );
 };
