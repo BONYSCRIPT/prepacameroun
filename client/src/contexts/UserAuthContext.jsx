@@ -14,7 +14,7 @@ import {
   updateProfile
 } from 'firebase/auth';
 
-import { getOrCreateUser } from '../services/firestoreService';
+import { getOrCreateUser, checkIfAdmin } from '../services/firestoreService';
 import { toast } from 'react-toastify';
 
 export const UserAuthContext = createContext(null);
@@ -33,15 +33,21 @@ export const UserAuthProvider = ({ children }) => {
         try {
           // Crée ou récupère l'utilisateur dans Firestore directement
           const firestoreUser = await getOrCreateUser(firebaseUser);
+          
+          // Vérifie si l'utilisateur est aussi admin (même UID peut être dans les 2 collections)
+          const adminData = await checkIfAdmin(firebaseUser.uid);
+          
           setUser({
             id: firebaseUser.uid,
             ...firestoreUser,
             email: firebaseUser.email,
             username: firestoreUser.username || firebaseUser.displayName || firebaseUser.email.split('@')[0],
             photoURL: firebaseUser.photoURL,
-            provider: firestoreUser.provider || 'firebase'
+            provider: firestoreUser.provider || 'firebase',
+            isAdmin: !!adminData,
+            adminRole: adminData?.role || null
           });
-          localStorage.setItem('userData', JSON.stringify(firestoreUser));
+          localStorage.setItem('userData', JSON.stringify({ ...firestoreUser, isAdmin: !!adminData, adminRole: adminData?.role }));
         } catch (error) {
           console.error('Erreur Firestore:', error);
           // Session dégradée
@@ -51,7 +57,8 @@ export const UserAuthProvider = ({ children }) => {
             username: firebaseUser.displayName || firebaseUser.email.split('@')[0],
             photoURL: firebaseUser.photoURL,
             provider: 'firebase',
-            isPartial: true
+            isPartial: true,
+            isAdmin: false
           });
         }
       } else {
