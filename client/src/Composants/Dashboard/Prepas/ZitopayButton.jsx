@@ -43,10 +43,40 @@ const ZitopayButton = ({
 
   const [zitopayUrlParams, setZitopayUrlParams] = useState(null);
   const [transactionRef, setTransactionRef] = useState(null);
+  const [simulating, setSimulating] = useState(false);
   const isLocalEnv = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-  const API_BASE = isLocalEnv 
-    ? (import.meta.env.VITE_API_URL || 'http://127.0.0.1:8005')
-    : ''; // En production, utiliser l'URL relative (même domaine Vercel)
+  const API_BASE = '';
+
+  const simulatePayment = async () => {
+    if (!transactionRef) {
+      toast.error('Aucune transaction en cours');
+      return;
+    }
+    setSimulating(true);
+    try {
+      const response = await fetch(`${API_BASE}/api/notification`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ref: transactionRef,
+          status: 'success',
+          amount: prix
+        })
+      });
+      const data = await response.json();
+      if (data.success) {
+        toast.success('✅ Paiement simulé avec succès !');
+        window.postMessage({ type: 'payment_success', prepaId, ref: transactionRef }, '*');
+        setTimeout(() => setShowModal(false), 1500);
+      } else {
+        toast.error('Erreur lors de la simulation');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Erreur réseau lors de la simulation');
+    }
+    setSimulating(false);
+  };
 
   const handleOpenPayment = async (e) => {
     if (e) {
@@ -105,6 +135,7 @@ const ZitopayButton = ({
       zitopayUrl.searchParams.append('popup', '1');
 
       setZitopayUrlParams(zitopayUrl.toString());
+      setLoading(false);
 
     } catch (error) {
       console.error("Erreur Init transaction Zitopay:", error);
@@ -169,9 +200,17 @@ const ZitopayButton = ({
               <p className="mt-3 text-muted">Création de la transaction sécurisée...</p>
             </div>
           )}
-          {isLocalEnv && zitopayUrlParams && (
+          {zitopayUrlParams && (
             <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', backgroundColor: '#fff3cd', padding: '10px 15px', zIndex: 5, borderBottom: '1px solid #ffeeba', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ color: '#856404', fontSize: '0.9rem', fontWeight: 600 }}>Environnement local</span>
+              <span style={{ color: '#856404', fontSize: '0.9rem', fontWeight: 600 }}>Environnement de test</span>
+              <button 
+                onClick={simulatePayment} 
+                disabled={simulating}
+                className="btn btn-warning btn-sm" 
+                style={{ fontWeight: 700 }}
+              >
+                {simulating ? 'Simulation en cours...' : 'Simuler le paiement réussi'}
+              </button>
             </div>
           )}
           {zitopayUrlParams ? (
