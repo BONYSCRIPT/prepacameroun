@@ -163,7 +163,7 @@ export const UserAuthProvider = ({ children }) => {
       if (result.user) {
         if (!auth.currentUser.emailVerified) {
           await signOutUser();
-          toast.error("Veuillez vérifier votre email.");
+          toast.error("Veuillez vérifier votre email avant de vous connecter.");
           return { success: false, error: "Email non vérifié" };
         }
 
@@ -173,8 +173,21 @@ export const UserAuthProvider = ({ children }) => {
 
       return { success: false, error: "Erreur inconnue" };
     } catch (error) {
-      toast.error(error.message);
-      return { success: false, error: error.message };
+      // Traduire les erreurs Firebase en français
+      let message = "Email ou mot de passe incorrect";
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+        message = "Email ou mot de passe incorrect";
+      } else if (error.code === 'auth/user-disabled') {
+        message = "Ce compte a été désactivé";
+      } else if (error.code === 'auth/too-many-requests') {
+        message = "Trop de tentatives. Réessayez plus tard.";
+      } else if (error.code === 'auth/invalid-email') {
+        message = "Format d'email invalide";
+      } else {
+        message = error.message || "Erreur de connexion";
+      }
+      toast.error(message);
+      return { success: false, error: message };
     } finally {
       setLoading(false);
     }

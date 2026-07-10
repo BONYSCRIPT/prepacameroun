@@ -156,13 +156,11 @@ const Navbar = () => {
         setLoginData({ email: '', password: '' });
         navigate('/user/dashboard');
       } else {
-        // Vérifier si l'erreur est due à un email non vérifié
-        //if (result.error === "Email non vérifié") {
-        //  toast.error("Veuillez vérifier votre email avant de vous connecter.");
-        //  navigate('/verify-email-info'); // Rediriger vers la page VerifyEmailInfo
-        //} else {
-        toast.error(result.error || 'Erreur lors de la connexion');
-        //}
+        if (result.error === "Email non vérifié") {
+          toast.error("Veuillez vérifier votre email avant de vous connecter.");
+        } else {
+          toast.error(result.error || 'Erreur lors de la connexion');
+        }
       }
     } catch (err) {
       if (err instanceof Yup.ValidationError) {
