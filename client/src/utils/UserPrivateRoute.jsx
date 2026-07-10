@@ -25,11 +25,12 @@ const UserPrivateRoute = () => {
     }
   }, [firebaseUser, user]);
 
+  // Si localStorage a un utilisateur, on laisse passer immédiatement (pas de spinner)
+  if (localUser && !user) {
+    return <Outlet />;
+  }
+
   if (loading) {
-    // Même en chargement, si localStorage a l'utilisateur, on laisse passer
-    if (localUser) {
-      return <Outlet />;
-    }
     return (
       <div className="d-flex justify-content-center align-items-center vh-100">
         <div className="spinner-border text-primary" role="status">
