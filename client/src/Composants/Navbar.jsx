@@ -313,7 +313,7 @@ const Navbar = () => {
                   e.currentTarget.style.transform = 'translateY(0)';
                 }}
               >
-                D connexion
+                Déconnexion
               </button>
             </>
           ) : (

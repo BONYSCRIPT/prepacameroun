@@ -194,8 +194,18 @@ export const UserAuthProvider = ({ children }) => {
           return { success: false, error: "Email non vérifié" };
         }
 
-        setUser(result.user);
-        return { success: true, user: result.user };
+        // ✅ Formater l'utilisateur correctement (comme login() le fait)
+        const formattedUser = {
+          id: result.user.uid,
+          email: result.user.email,
+          username: result.user.displayName || email.split('@')[0],
+          photoURL: result.user.photoURL,
+          provider: 'email',
+          isAdmin: false
+        };
+        setUser(formattedUser);
+        localStorage.setItem('userData', JSON.stringify(formattedUser));
+        return { success: true, user: formattedUser };
       }
 
       return { success: false, error: "Erreur inconnue" };
