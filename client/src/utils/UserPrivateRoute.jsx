@@ -5,10 +5,19 @@ import EmailVerificationModal from '../Composants/EmailVerificationModal'; // Im
 
 const UserPrivateRoute = () => {
   const { user, firebaseUser, loading } = useUserAuth();
-  const [showEmailVerificationModal, setShowEmailVerificationModal] = useState(false); // État pour le modal
+  const [showEmailVerificationModal, setShowEmailVerificationModal] = useState(false);
+
+  // Fallback depuis le localStorage pour éviter le flash de redirection
+  const [localUser] = useState(() => {
+    try {
+      const saved = localStorage.getItem('userData');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
 
   useEffect(() => {
-    // Afficher le modal si l'utilisateur a accès au dashboard et que l'email n'est pas vérifié
     if (user && firebaseUser && !firebaseUser.emailVerified) {
       setShowEmailVerificationModal(true);
     } else {
@@ -17,6 +26,10 @@ const UserPrivateRoute = () => {
   }, [firebaseUser, user]);
 
   if (loading) {
+    // Même en chargement, si localStorage a l'utilisateur, on laisse passer
+    if (localUser) {
+      return <Outlet />;
+    }
     return (
       <div className="d-flex justify-content-center align-items-center vh-100">
         <div className="spinner-border text-primary" role="status">
@@ -33,7 +46,7 @@ const UserPrivateRoute = () => {
         onHide={() => setShowEmailVerificationModal(false)}
         userEmail={firebaseUser?.email}
       />
-      {user ? <Outlet /> : <Navigate to="/" />}
+      {user || localUser ? <Outlet /> : <Navigate to="/" />}
     </>
   );
 };
