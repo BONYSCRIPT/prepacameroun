@@ -1,4 +1,4 @@
-import { createContext, useState, useEffect } from 'react';
+import { createContext, useState, useEffect, useRef } from 'react';
 import {
   signInWithGoogle,
   signOutUser,
@@ -24,6 +24,8 @@ export const UserAuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [firebaseUser, setFirebaseUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  // Flag pour éviter que onAuthStateChange écrase le setUser de signup()
+  const justSignedUpRef = useRef(false);
 
   // 🛡️ Écoute des changements d'état d'authentification Firebase
   useEffect(() => {
@@ -31,11 +33,18 @@ export const UserAuthProvider = ({ children }) => {
       setFirebaseUser(firebaseUser);
 
       if (firebaseUser) {
+        // ⏭️ Si on vient de s'inscrire, on saute Firestore (déjà fait dans signup)
+        if (justSignedUpRef.current) {
+          justSignedUpRef.current = false;
+          setLoading(false);
+          return;
+        }
+
         try {
-          // Crée ou récupère l'utilisateur dans Firestore directement
+          // Crée ou récupère l'utilisateur dans Firestore
           const firestoreUser = await getOrCreateUser(firebaseUser);
           
-          // Vérifie si l'utilisateur est aussi admin (même UID peut être dans les 2 collections)
+          // Vérifie si admin
           const adminData = await checkIfAdmin(firebaseUser.uid);
           
           setUser({
@@ -51,7 +60,6 @@ export const UserAuthProvider = ({ children }) => {
           localStorage.setItem('userData', JSON.stringify({ ...firestoreUser, isAdmin: !!adminData, adminRole: adminData?.role }));
         } catch (error) {
           console.error('Erreur Firestore:', error);
-          // Session dégradée
           setUser({
             id: firebaseUser.uid,
             email: firebaseUser.email,
@@ -128,20 +136,20 @@ export const UserAuthProvider = ({ children }) => {
         await updateProfile(auth.currentUser, { displayName: username });
         await sendEmailVerification(auth.currentUser);
         
-        // 🔥 Définir l'utilisateur immédiatement pour que la redirection vers dashboard fonctionne
-        setUser({
+        // 🔥 Flag pour bloquer l'écouteur onAuthStateChange
+        justSignedUpRef.current = true;
+
+        // 🔥 Définir l'utilisateur IMMÉDIATEMENT (sans attendre Firestore)
+        const newUser = {
           id: result.user.uid,
           email: result.user.email,
           username: username || result.user.displayName || email.split('@')[0],
           photoURL: result.user.photoURL,
           provider: 'email',
           isAdmin: false
-        });
-        localStorage.setItem('userData', JSON.stringify({
-          id: result.user.uid,
-          email: result.user.email,
-          username: username || result.user.displayName || email.split('@')[0]
-        }));
+        };
+        setUser(newUser);
+        localStorage.setItem('userData', JSON.stringify(newUser));
 
         toast.success("Inscription réussie !");
         return { success: true, user: result.user };
