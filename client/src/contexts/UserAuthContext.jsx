@@ -11,7 +11,8 @@ import {
   signInWithEmailAndPassword,
   sendPasswordResetEmail,
   sendEmailVerification,
-  updateProfile
+  updateProfile,
+  fetchSignInMethodsForEmail
 } from 'firebase/auth';
 
 import { getOrCreateUser, checkIfAdmin } from '../services/firestoreService';
@@ -158,6 +159,24 @@ export const UserAuthProvider = ({ children }) => {
   const loginWithEmailAndPassword = async (email, password) => {
     try {
       setLoading(true);
+      
+      // 1️⃣ Vérifier d'abord les méthodes d'authentification disponibles pour cet email
+      const methods = await fetchSignInMethodsForEmail(auth, email);
+      
+      // Si le compte existe mais PAS par email/mot de passe (ex: Google uniquement)
+      if (methods.length > 0 && !methods.includes('password')) {
+        const provider = methods.includes('google.com') ? 'Google' : methods[0];
+        toast.error(`Ce compte est lié à ${provider}. Veuillez vous connecter avec ${provider}.`);
+        return { success: false, error: `${provider}` };
+      }
+
+      // Si aucune méthode trouvée → compte inexistant
+      if (methods.length === 0) {
+        toast.error("Aucun compte trouvé avec cet email.");
+        return { success: false, error: "Aucun compte trouvé" };
+      }
+
+      // 2️⃣ Connexion avec email/mot de passe
       const result = await signInWithEmailAndPassword(auth, email, password);
 
       if (result.user) {
@@ -175,7 +194,7 @@ export const UserAuthProvider = ({ children }) => {
     } catch (error) {
       // Traduire les erreurs Firebase en français
       let message = "Email ou mot de passe incorrect";
-      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+      if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
         message = "Email ou mot de passe incorrect";
       } else if (error.code === 'auth/user-disabled') {
         message = "Ce compte a été désactivé";
