@@ -126,7 +126,23 @@ export const UserAuthProvider = ({ children }) => {
       if (result.user) {
         await updateProfile(auth.currentUser, { displayName: username });
         await sendEmailVerification(auth.currentUser);
-        toast.success("Inscription réussie ! Vérifiez votre email.");
+        
+        // 🔥 Définir l'utilisateur immédiatement pour que la redirection vers dashboard fonctionne
+        setUser({
+          id: result.user.uid,
+          email: result.user.email,
+          username: username || result.user.displayName || email.split('@')[0],
+          photoURL: result.user.photoURL,
+          provider: 'email',
+          isAdmin: false
+        });
+        localStorage.setItem('userData', JSON.stringify({
+          id: result.user.uid,
+          email: result.user.email,
+          username: username || result.user.displayName || email.split('@')[0]
+        }));
+
+        toast.success("Inscription réussie !");
         return { success: true, user: result.user };
       } else {
         return { success: false, error: result.error };

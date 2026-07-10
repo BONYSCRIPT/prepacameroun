@@ -3,6 +3,8 @@ import { useUserAuth } from '../../../contexts/useUserAuth';
 import { toast } from 'react-toastify';
 import { MdPayment } from 'react-icons/md';
 import { Modal, Spinner } from 'react-bootstrap';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { db } from '../../../config/firebase';
 
 const ZitopayButton = ({
   prix,
@@ -17,35 +19,46 @@ const ZitopayButton = ({
   const [showModal, setShowModal] = useState(false);
   const { user } = useUserAuth();
 
-  useEffect(() => {
-    const handlePaymentSuccess = () => {
-      console.log('Signal de paiement reçu pour:', prepaId);
-      setShowModal(false);
-      toast.success('Paiement réussi !');
-      window.dispatchEvent(new CustomEvent('refreshNotifications'));
-      if (onSuccess) {
-        onSuccess({ prepaId });
-      }
-    };
-
-    const handlePaymentCancel = () => {
-      setShowModal(false);
-      toast.info('Paiement annulé');
-    };
-
-    window.addEventListener('payment_success', handlePaymentSuccess);
-    window.addEventListener('payment_cancel', handlePaymentCancel);
-    return () => {
-      window.removeEventListener('payment_success', handlePaymentSuccess);
-      window.removeEventListener('payment_cancel', handlePaymentCancel);
-    };
-  }, [prepaId, onSuccess]);
-
   const [zitopayUrlParams, setZitopayUrlParams] = useState(null);
   const [transactionRef, setTransactionRef] = useState(null);
   const [simulating, setSimulating] = useState(false);
-  const isLocalEnv = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  const [pollingActive, setPollingActive] = useState(false);
   const API_BASE = '';
+
+  // ✅ Vérifier périodiquement si l'inscription a été créée (paiement réussi via popup Zitopay)
+  useEffect(() => {
+    if (!pollingActive || !transactionRef || !user?.id) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const q = query(
+          collection(db, 'inscriptions'),
+          where('user_id', '==', user.id),
+          where('prepa_id', '==', prepaId),
+          where('statut', '==', 'active')
+        );
+        const snapshot = await getDocs(q);
+        if (!snapshot.empty) {
+          clearInterval(interval);
+          setPollingActive(false);
+          setShowModal(false);
+          toast.success('✅ Paiement confirmé !');
+          window.dispatchEvent(new CustomEvent('payment_success', { detail: { prepaId, ref: transactionRef } }));
+          window.dispatchEvent(new CustomEvent('refreshInscriptions'));
+          if (onSuccess) onSuccess({ prepaId });
+        }
+      } catch (e) {
+        // Ignorer les erreurs de polling
+      }
+    }, 3000);
+
+    setTimeout(() => {
+      clearInterval(interval);
+      setPollingActive(false);
+    }, 300000);
+
+    return () => clearInterval(interval);
+  }, [pollingActive, transactionRef, user?.id, prepaId, onSuccess]);
 
   const simulatePayment = async () => {
     if (!transactionRef) {
@@ -95,13 +108,10 @@ const ZitopayButton = ({
 
     try {
       const userEmail = user?.email || '';
-      const userName = user?.username || user?.displayName || userEmail.split('@')[0] || 'Utilisateur';
 
       const response = await fetch(`${API_BASE}/api/init`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           prepaId: prepaId,
           montant: prix,
@@ -122,8 +132,8 @@ const ZitopayButton = ({
       const receiver = import.meta.env.VITE_ZITOPAY_USERNAME || 'prepacameroun';
       const note = `Inscription PrepaCameroun: ${prepaNom}`;
 
-      const successUrl = `${window.location.origin}/api/verify?status=success&reference=${reference}`;
-      const cancelUrl = `${window.location.origin}/api/verify?status=cancel&reference=${reference}`;
+      const successUrl = `${window.location.origin}/payment-success?reference=${reference}`;
+      const cancelUrl = `${window.location.origin}/payment-cancel?reference=${reference}`;
 
       const zitopayUrl = new URL('https://zitopay.africa/sci/');
       zitopayUrl.searchParams.append('receiver', receiver);
@@ -137,6 +147,7 @@ const ZitopayButton = ({
 
       setZitopayUrlParams(zitopayUrl.toString());
       setLoading(false);
+      setPollingActive(true);
 
     } catch (error) {
       console.error("Erreur Init transaction Zitopay:", error);
@@ -149,6 +160,7 @@ const ZitopayButton = ({
   const handleCloseModal = () => {
     setShowModal(false);
     setZitopayUrlParams(null);
+    setPollingActive(false);
   };
 
   const defaultButtonStyle = {
@@ -203,14 +215,14 @@ const ZitopayButton = ({
           )}
           {zitopayUrlParams && (
             <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', backgroundColor: '#fff3cd', padding: '10px 15px', zIndex: 5, borderBottom: '1px solid #ffeeba', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ color: '#856404', fontSize: '0.9rem', fontWeight: 600 }}>Environnement de test</span>
+              <span style={{ color: '#856404', fontSize: '0.9rem', fontWeight: 600 }}>Paiement de test</span>
               <button 
                 onClick={simulatePayment} 
                 disabled={simulating}
                 className="btn btn-warning btn-sm" 
                 style={{ fontWeight: 700 }}
               >
-                {simulating ? 'Simulation en cours...' : 'Simuler le paiement réussi'}
+                {simulating ? 'Simulation...' : 'Simuler le paiement'}
               </button>
             </div>
           )}

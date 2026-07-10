@@ -120,15 +120,14 @@ const Navbar = () => {
       const result = await signup(formData.email, formData.password, formData.username);
       
       if (result.success) {
-        // ...après un signup réussi...
         localStorage.setItem('pendingEmail', formData.email);
         localStorage.setItem('pendingPassword', formData.password);
 
-        toast.success('Inscription réussie! Veuillez vérifier votre email pour confirmer votre compte.');
+        toast.success('Inscription réussie!');
         setShowSignupModal(false);
         setFormData({ username: '', email: '', password: '', confirmPassword: '' });
-        // Supprimer cette ligne:
-        // navigate('/verify-email-info'); 
+        // 🔥 Rediriger vers le dashboard après inscription
+        navigate('/user/dashboard');
       } else {
         toast.error(result.error || 'Erreur lors de l\'inscription');
       }
