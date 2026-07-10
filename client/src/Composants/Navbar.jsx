@@ -221,8 +221,16 @@ const Navbar = () => {
   const handleGoogleSuccess = (firebaseUser) => {
     setShowLoginModal(false);
     setShowSignupModal(false);
-    // Mettre à jour directement l'état de l'utilisateur avec les données de Firebase
-    // Le hook useEffect dans UserAuthContext se chargera d'envoyer le token au backend
+    // Définir l'utilisateur immédiatement pour la redirection
+    const userName = firebaseUser.displayName || firebaseUser.email.split('@')[0];
+    login({
+      id: firebaseUser.uid,
+      email: firebaseUser.email,
+      username: userName,
+      photoURL: firebaseUser.photoURL,
+      provider: 'google.com',
+      isAdmin: false
+    });
     navigate('/user/dashboard');
   };
 
