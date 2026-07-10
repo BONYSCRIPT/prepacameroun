@@ -154,7 +154,10 @@ const Navbar = () => {
         toast.success('Connexion réussie !');
         setShowLoginModal(false);
         setLoginData({ email: '', password: '' });
-        navigate('/user/dashboard');
+        // ✅ Forcer l'utilisateur dans le contexte + localStorage
+        login(result.user);
+        // ✅ Redirection forcée (contourne le délai React)
+        window.location.href = '/user/dashboard';
       } else {
         if (result.error === "Email non vérifié") {
           toast.error("Veuillez vérifier votre email avant de vous connecter.");
