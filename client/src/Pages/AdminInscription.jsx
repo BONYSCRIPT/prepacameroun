@@ -8,200 +8,525 @@ import 'bootstrap/dist/css/bootstrap.css';
 import AdminNavbar from '../Composants/Admin/AdminNavbar';
 import { useState } from 'react';
 import {
-  MdPerson, MdEmail, MdLock, MdVisibility, MdVisibilityOff,
-  MdKey, MdAdminPanelSettings, MdHowToReg
+  MdPerson,
+  MdEmail,
+  MdLock,
+  MdVisibility,
+  MdVisibilityOff,
+  MdKey,
+  MdAdminPanelSettings,
+  MdHowToReg
 } from 'react-icons/md';
 import { toast } from 'react-toastify';
 
-// Schémas
-const signupSchema = Yup.object().shape({
-  displayName: Yup.string().required("Le nom d'affichage est requis").min(2, 'Minimum 2 caractères').max(50).trim(),
-  email: Yup.string().email("Email invalide").required("L'email est requis").max(255).trim(),
-  password: Yup.string().required("Le mot de passe est requis")
-    .min(8, 'Minimum 8 caractères')
-    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, 'Doit contenir majuscule, minuscule et chiffre'),
-  confirmPassword: Yup.string().oneOf([Yup.ref('password'), null], 'Les mots de passe doivent correspondre').required('Requis'),
-  adminKey: Yup.string().required("La clé admin est requise"),
+// Thème pour maintenir la cohérence visuelle
+const theme = {
+  colors: {
+    primary: '#0d6efd',
+    success: '#28a745',
+    danger: '#dc3545',
+    warning: '#ffc107',
+    light: '#f8f9fa',
+    white: '#ffffff',
+    text: '#212529',
+    muted: '#6c757d',
+    border: '#dee2e6',
+    inputBg: '#f9f9f9'
+  },
+  shadows: {
+    card: '0 10px 25px rgba(0, 0, 0, 0.1)',
+    input: 'inset 0 1px 2px rgba(0, 0, 0, 0.075)',
+    button: '0 4px 6px rgba(40, 167, 69, 0.25)'
+  },
+  borderRadius: {
+    default: '0.5rem',
+    input: '0.375rem',
+    button: '0.375rem'
+  },
+  transitions: {
+    default: 'all 0.3s ease'
+  }
+};
+
+// Schéma de validation avec Yup
+const validationSchema = Yup.object().shape({
+  username: Yup.string()
+    .required("Le nom d'utilisateur est requis")
+    .min(3, "Le nom d'utilisateur doit contenir au moins 3 caractères")
+    .max(30, "Le nom d'utilisateur ne doit pas dépasser 30 caractères")
+    .matches(/^[a-zA-Z0-9_]+$/, "Le nom d'utilisateur ne peut contenir que des lettres, des chiffres et des underscores"),
+  email: Yup.string()
+    .email("Format d'email invalide")
+    .required("L'email est requis")
+    .max(255, "L'email ne doit pas dépasser 255 caractères"),
+  password: Yup.string()
+    .required("Le mot de passe est requis")
+    .min(8, "Le mot de passe doit contenir au moins 8 caractères")
+    .matches(/^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[^a-zA-Z0-9]).{8,}$/, "Le mot de passe doit contenir au moins une majuscule, une minuscule, un chiffre et un caractère spécial"),
+  confirmPassword: Yup.string()
+    .oneOf([Yup.ref('password'), null], "Les mots de passe doivent correspondre")
+    .required("La confirmation du mot de passe est requise"),
+  role: Yup.string()
+    .oneOf(['admin', 'super_admin'], "Rôle invalide")
+    .required("Le rôle est requis"),
+  adminKey1: Yup.string()
+    .required("La clé d'administration 1 est requise")
+    .min(8, "La clé d'administration 1 doit contenir au moins 8 caractères")
+    .max(50, "La clé d'administration 1 ne doit pas dépasser 50 caractères"),
+  adminKey2: Yup.string()
+    .required("La clé d'administration 2 est requise")
+    .min(8, "La clé d'administration 2 doit contenir au moins 8 caractères")
+    .max(50, "La clé d'administration 2 ne doit pas dépasser 50 caractères")
 });
 
 const AdminInscription = () => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
-  const [showKey, setShowKey] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSignup = async (values, { setSubmitting }) => {
+  // Valeurs initiales du formulaire
+  const initialValues = {
+    username: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+    role: 'admin',
+    adminKey1: '',
+    adminKey2: ''
+  };
+
+  // Fonction pour basculer l'affichage du mot de passe
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+
+  // Fonction pour basculer l'affichage de la confirmation du mot de passe
+  const toggleConfirmPasswordVisibility = () => {
+    setShowConfirmPassword(!showConfirmPassword);
+  };
+
+  // Gestion de la soumission du formulaire
+  const handleSubmit = async (values, { setSubmitting, setErrors }) => {
+    setIsLoading(true);
     try {
-      // Étape 1: Créer le compte Firebase
-      const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
-      const firebaseUser = userCredential.user;
+      let firebaseUser;
+      try {
+        // Essayer de créer le compte Firebase
+        const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
+        firebaseUser = userCredential.user;
+      } catch (createError) {
+        // Si l'email existe déjà, essayer de connecter avec le mot de passe fourni
+        if (createError.code === 'auth/email-already-in-use') {
+          try {
+            const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
+            firebaseUser = userCredential.user;
+          } catch (loginError) {
+            // Mot de passe incorrect pour un compte existant
+            setErrors({ submit: 'Cet email est déjà utilisé. Veuillez utiliser un autre email ou vous connecter avec le bon mot de passe.' });
+            toast.error('Email déjà utilisé. Mot de passe incorrect.');
+            setIsLoading(false);
+            setSubmitting(false);
+            return;
+          }
+        } else {
+          throw createError;
+        }
+      }
 
-      // Étape 2: Enregistrer dans Firestore
+      // Créer le document admin dans Firestore (ou mettre à jour si déjà existant)
       await createAdmin({
-        uid: firebaseUser.uid,
+        username: values.username,
         email: values.email,
-        displayName: values.displayName,
-        adminKey: values.adminKey,
-        role: 'admin',
+        firebaseUid: firebaseUser.uid,
+        role: values.role || 'admin'
       });
 
-      // Connexion auto
-      await signInWithEmailAndPassword(auth, values.email, values.password);
-      
-      toast.success('Compte admin créé avec succès !');
-      navigate('/admin/dashboard');
+      toast.success('Inscription réussie ! Vous pouvez maintenant vous connecter.');
+      navigate('/admin/connexion');
     } catch (error) {
-      let msg = "Erreur lors de l'inscription";
-      if (error.code === 'auth/email-already-in-use') msg = "Cet email est déjà utilisé";
-      else if (error.code === 'auth/weak-password') msg = "Mot de passe trop faible";
-      else if (error.message) msg = error.message;
-      toast.error(msg);
-    } finally {
-      setSubmitting(false);
+      console.error('Error during registration:', error);
+      let errorMessage = 'Une erreur est survenue lors de l\'inscription.';
+      if (error.message) {
+        errorMessage = error.message;
+      }
+      setErrors({ submit: errorMessage });
+      toast.error(errorMessage);
     }
+    setIsLoading(false);
+    setSubmitting(false);
   };
+
+  // Fonction pour afficher les exigences du mot de passe
+  const PasswordRequirements = () => (
+    <div className="password-requirements mt-2 p-2 rounded" style={{
+      backgroundColor: 'rgba(13, 110, 253, 0.05)',
+      fontSize: '0.85rem',
+      color: theme.colors.muted
+    }}>
+      <p className="mb-1 fw-semibold">Le mot de passe doit contenir :</p>
+      <ul className="mb-0 ps-3">
+        <li>Au moins 8 caractères</li>
+        <li>Au moins une lettre majuscule</li>
+        <li>Au moins une lettre minuscule</li>
+        <li>Au moins un chiffre</li>
+        <li>Au moins un caractère spécial</li>
+      </ul>
+    </div>
+  );
 
   return (
     <>
       <AdminNavbar />
-      <div style={{
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #0d1114 0%, #1a1f2e 50%, #28a74522 100%)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px',
-      }}>
-        <div style={{
-          background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(20px)',
-          borderRadius: '24px', padding: '40px', width: '100%', maxWidth: '440px',
-          boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
+      <div className="container-fluid min-vh-100 d-flex align-items-center justify-content-center"
+        style={{
+          backgroundColor: theme.colors.light,
+          paddingTop: '56px' // Pour compenser la hauteur de la navbar
         }}>
-          {/* Header */}
-          <div className="text-center mb-4">
-            <div style={{
-              width: '64px', height: '64px', borderRadius: '50%',
-              background: 'linear-gradient(135deg, #28a745, #20c997)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px',
-            }}>
-              <MdAdminPanelSettings style={{ color: 'white', fontSize: '1.8rem' }} />
-            </div>
-            <h4 className="fw-bold mb-1" style={{ color: '#1a1a2e' }}>Inscription Admin</h4>
-            <p style={{ color: '#6c757d', fontSize: '0.9rem', margin: 0 }}>
-              Créez un compte pour gérer la plateforme
-            </p>
-          </div>
+        <div className="row w-100 justify-content-center">
+          <div className="col-11 col-sm-10 col-md-8 col-lg-7 col-xl-6">
+            <div className="card border-0"
+              style={{
+                borderRadius: theme.borderRadius.default,
+                boxShadow: theme.shadows.card,
+                overflow: 'hidden'
+              }}>
+              <div className="card-header text-center py-4"
+                style={{
+                  backgroundColor: theme.colors.success,
+                  color: theme.colors.white,
+                  border: 'none'
+                }}>
+                <h4 className="mb-0 fw-bold">Inscription Administrateur</h4>
+                <p className="text-white-50 mb-0 mt-1">
+                  Créez votre compte pour accéder à l&apos;espace d&apos;administration
+                </p>
+              </div>
 
-          <Formik
-            initialValues={{ displayName: '', email: '', password: '', confirmPassword: '', adminKey: '' }}
-            validationSchema={signupSchema}
-            onSubmit={handleSignup}
-          >
-            {({ isSubmitting, errors, touched }) => (
-              <Form>
-                {/* Nom */}
-                <div className="mb-3">
-                  <label className="form-label fw-medium" style={{ color: '#495057', fontSize: '0.9rem' }}>Nom complet</label>
-                  <div style={{ position: 'relative' }}>
-                    <MdPerson style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#adb5bd', zIndex: 2 }} />
-                    <Field name="displayName" className="form-control" placeholder="Admin PrepaCameroun"
-                      style={{ paddingLeft: '40px', borderRadius: '12px', height: '48px',
-                        border: `1.5px solid ${errors.displayName && touched.displayName ? '#dc3545' : '#e9ecef'}`,
-                        background: '#f8f9fc', fontSize: '0.95rem' }} />
-                  </div>
-                  <ErrorMessage name="displayName" component="div" className="text-danger small mt-1" />
-                </div>
-
-                {/* Email */}
-                <div className="mb-3">
-                  <label className="form-label fw-medium" style={{ color: '#495057', fontSize: '0.9rem' }}>Email</label>
-                  <div style={{ position: 'relative' }}>
-                    <MdEmail style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#adb5bd', zIndex: 2 }} />
-                    <Field type="email" name="email" className="form-control" placeholder="admin@prepacameroun.com"
-                      style={{ paddingLeft: '40px', borderRadius: '12px', height: '48px',
-                        border: `1.5px solid ${errors.email && touched.email ? '#dc3545' : '#e9ecef'}`,
-                        background: '#f8f9fc', fontSize: '0.95rem' }} />
-                  </div>
-                  <ErrorMessage name="email" component="div" className="text-danger small mt-1" />
-                </div>
-
-                {/* Mot de passe */}
-                <div className="mb-3">
-                  <label className="form-label fw-medium" style={{ color: '#495057', fontSize: '0.9rem' }}>Mot de passe</label>
-                  <div style={{ position: 'relative' }}>
-                    <MdLock style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#adb5bd', zIndex: 2 }} />
-                    <Field type={showPassword ? 'text' : 'password'} name="password" className="form-control" placeholder="••••••••"
-                      style={{ paddingLeft: '40px', paddingRight: '40px', borderRadius: '12px', height: '48px',
-                        border: `1.5px solid ${errors.password && touched.password ? '#dc3545' : '#e9ecef'}`,
-                        background: '#f8f9fc', fontSize: '0.95rem' }} />
-                    <button type="button" onClick={() => setShowPassword(!showPassword)}
-                      style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#adb5bd', cursor: 'pointer', padding: 0 }}>
-                      {showPassword ? <MdVisibilityOff size={20} /> : <MdVisibility size={20} />}
-                    </button>
-                  </div>
-                  <ErrorMessage name="password" component="div" className="text-danger small mt-1" />
-                </div>
-
-                {/* Confirmation */}
-                <div className="mb-3">
-                  <label className="form-label fw-medium" style={{ color: '#495057', fontSize: '0.9rem' }}>Confirmer le mot de passe</label>
-                  <div style={{ position: 'relative' }}>
-                    <MdLock style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#adb5bd', zIndex: 2 }} />
-                    <Field type={showConfirm ? 'text' : 'password'} name="confirmPassword" className="form-control" placeholder="••••••••"
-                      style={{ paddingLeft: '40px', paddingRight: '40px', borderRadius: '12px', height: '48px',
-                        border: `1.5px solid ${errors.confirmPassword && touched.confirmPassword ? '#dc3545' : '#e9ecef'}`,
-                        background: '#f8f9fc', fontSize: '0.95rem' }} />
-                    <button type="button" onClick={() => setShowConfirm(!showConfirm)}
-                      style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#adb5bd', cursor: 'pointer', padding: 0 }}>
-                      {showConfirm ? <MdVisibilityOff size={20} /> : <MdVisibility size={20} />}
-                    </button>
-                  </div>
-                  <ErrorMessage name="confirmPassword" component="div" className="text-danger small mt-1" />
-                </div>
-
-                {/* Clé admin */}
-                <div className="mb-4">
-                  <label className="form-label fw-medium" style={{ color: '#495057', fontSize: '0.9rem' }}>Clé administrateur</label>
-                  <div style={{ position: 'relative' }}>
-                    <MdKey style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#adb5bd', zIndex: 2 }} />
-                    <Field type={showKey ? 'text' : 'password'} name="adminKey" className="form-control" placeholder="••••••••"
-                      style={{ paddingLeft: '40px', paddingRight: '40px', borderRadius: '12px', height: '48px',
-                        border: `1.5px solid ${errors.adminKey && touched.adminKey ? '#dc3545' : '#e9ecef'}`,
-                        background: '#f8f9fc', fontSize: '0.95rem' }} />
-                    <button type="button" onClick={() => setShowKey(!showKey)}
-                      style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#adb5bd', cursor: 'pointer', padding: 0 }}>
-                      {showKey ? <MdVisibilityOff size={20} /> : <MdVisibility size={20} />}
-                    </button>
-                  </div>
-                  <ErrorMessage name="adminKey" component="div" className="text-danger small mt-1" />
-                </div>
-
-                <button type="submit" disabled={isSubmitting}
-                  className="btn w-100 d-inline-flex align-items-center justify-content-center gap-2"
-                  style={{
-                    background: 'linear-gradient(135deg, #28a745, #20c997)',
-                    color: 'white', borderRadius: '12px', height: '48px',
-                    fontWeight: 600, fontSize: '1rem', border: 'none',
-                    boxShadow: '0 4px 16px rgba(40,167,69,0.3)',
-                    transition: 'all 0.3s ease',
-                    opacity: isSubmitting ? 0.7 : 1,
-                  }}
-                  onMouseOver={(e) => { if (!isSubmitting) { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(40,167,69,0.4)'; }}}
-                  onMouseOut={(e) => { if (!isSubmitting) { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(40,167,69,0.3)'; }}}
+              <div className="card-body p-4">
+                <Formik
+                  initialValues={initialValues}
+                  validationSchema={validationSchema}
+                  onSubmit={handleSubmit}
                 >
-                  {isSubmitting ? (
-                    <div className="spinner-border spinner-border-sm" role="status" />
-                  ) : (
-                    <><MdHowToReg /> Créer le compte</>
-                  )}
-                </button>
+                  {({ errors, touched, isSubmitting }) => (
+                    <Form>
+                      {errors.submit && (
+                        <div className="alert alert-danger d-flex align-items-center" role="alert">
+                          <div className="me-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" className="bi bi-exclamation-triangle-fill flex-shrink-0 me-2" viewBox="0 0 16 16">
+                              <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z" />
+                            </svg>
+                          </div>
+                          <div>{errors.submit}</div>
+                        </div>
+                      )}
 
-                <div className="text-center mt-4">
-                  <Link to="/admin/connexion"
-                    style={{ color: '#28a745', textDecoration: 'none', fontSize: '0.9rem', fontWeight: 500 }}>
-                    Déjà un compte ? Se connecter
+                      <div className="alert alert-warning d-flex align-items-center mb-4" role="alert">
+                        <div className="me-2">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" className="bi bi-info-circle-fill flex-shrink-0 me-2" viewBox="0 0 16 16">
+                            <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2z" />
+                          </svg>
+                        </div>
+                        <div>
+                          <strong>Important :</strong> Les clés d&apos;administration sont nécessaires pour créer un compte. Contactez l&apos;administrateur principal pour les obtenir.
+                        </div>
+                      </div>
+
+                      <div className="row mb-4">
+                        <div className="col-md-6 mb-3 mb-md-0">
+                          <label htmlFor="adminKey1" className="form-label fw-semibold">Clé d&apos;administration 1</label>
+                          <div className="input-group">
+                            <span className="input-group-text" style={{ backgroundColor: theme.colors.light }}>
+                              <MdKey />
+                            </span>
+                            <Field
+                              type="password"
+                              name="adminKey1"
+                              id="adminKey1"
+                              className={`form-control ${errors.adminKey1 && touched.adminKey1 ? 'is-invalid' : ''}`}
+                              placeholder="Entrez la clé 1"
+                              style={{
+                                backgroundColor: theme.colors.inputBg,
+                                boxShadow: theme.shadows.input,
+                                borderRadius: `0 ${theme.borderRadius.input} ${theme.borderRadius.input} 0`,
+                                padding: '0.75rem',
+                                transition: theme.transitions.default
+                              }}
+                            />
+                            <ErrorMessage name="adminKey1" component="div" className="invalid-feedback" />
+                          </div>
+                        </div>
+                        <div className="col-md-6">
+                          <label htmlFor="adminKey2" className="form-label fw-semibold">Clé d&apos;administration 2</label>
+                          <div className="input-group">
+                            <span className="input-group-text" style={{ backgroundColor: theme.colors.light }}>
+                              <MdKey />
+                            </span>
+                            <Field
+                              type="password"
+                              name="adminKey2"
+                              id="adminKey2"
+                              className={`form-control ${errors.adminKey2 && touched.adminKey2 ? 'is-invalid' : ''}`}
+                              placeholder="Entrez la clé 2"
+                              style={{
+                                backgroundColor: theme.colors.inputBg,
+                                boxShadow: theme.shadows.input,
+                                borderRadius: `0 ${theme.borderRadius.input} ${theme.borderRadius.input} 0`,
+                                padding: '0.75rem',
+                                transition: theme.transitions.default
+                              }}
+                            />
+                            <ErrorMessage name="adminKey2" component="div" className="invalid-feedback" />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="mb-3">
+                        <label htmlFor="username" className="form-label fw-semibold">Nom d&apos;utilisateur</label>
+                        <div className="input-group">
+                          <span className="input-group-text" style={{ backgroundColor: theme.colors.light }}>
+                            <MdPerson />
+                          </span>
+                          <Field
+                            type="text"
+                            name="username"
+                            id="username"
+                            className={`form-control ${errors.username && touched.username ? 'is-invalid' : ''}`}
+                            placeholder="Entrez votre nom d'utilisateur"
+                            style={{
+                              backgroundColor: theme.colors.inputBg,
+                              boxShadow: theme.shadows.input,
+                              borderRadius: `0 ${theme.borderRadius.input} ${theme.borderRadius.input} 0`,
+                              padding: '0.75rem',
+                              transition: theme.transitions.default
+                            }}
+                          />
+                          <ErrorMessage name="username" component="div" className="invalid-feedback" />
+                        </div>
+                        <small className="form-text text-muted">
+                          Lettres, chiffres et underscores uniquement.
+                        </small>
+                      </div>
+
+                      <div className="mb-3">
+                        <label htmlFor="email" className="form-label fw-semibold">Email</label>
+                        <div className="input-group">
+                          <span className="input-group-text" style={{ backgroundColor: theme.colors.light }}>
+                            <MdEmail />
+                          </span>
+                          <Field
+                            type="email"
+                            name="email"
+                            id="email"
+                            className={`form-control ${errors.email && touched.email ? 'is-invalid' : ''}`}
+                            placeholder="Entrez votre email"
+                            style={{
+                              backgroundColor: theme.colors.inputBg,
+                              boxShadow: theme.shadows.input,
+                              borderRadius: `0 ${theme.borderRadius.input} ${theme.borderRadius.input} 0`,
+                              padding: '0.75rem',
+                              transition: theme.transitions.default
+                            }}
+                          />
+                          <ErrorMessage name="email" component="div" className="invalid-feedback" />
+                        </div>
+                      </div>
+
+                      <div className="mb-3">
+                        <label htmlFor="password" className="form-label fw-semibold">Mot de passe</label>
+                        <div className="input-group">
+                          <span className="input-group-text" style={{ backgroundColor: theme.colors.light }}>
+                            <MdLock />
+                          </span>
+                          <Field
+                            type={showPassword ? 'text' : 'password'}
+                            name="password"
+                            id="password"
+                            className={`form-control ${errors.password && touched.password ? 'is-invalid' : ''}`}
+                            placeholder="Créez un mot de passe"
+                            style={{
+                              backgroundColor: theme.colors.inputBg,
+                              boxShadow: theme.shadows.input,
+                              borderRadius: '0',
+                              padding: '0.75rem',
+                              transition: theme.transitions.default
+                            }}
+                          />
+                          <button
+                            type="button"
+                            className="input-group-text"
+                            onClick={togglePasswordVisibility}
+                            style={{
+                              backgroundColor: theme.colors.light,
+                              cursor: 'pointer',
+                              borderRadius: `0 ${theme.borderRadius.input} ${theme.borderRadius.input} 0`,
+                              border: `1px solid ${theme.colors.border}`,
+                              borderLeft: 'none'
+                            }}
+                          >
+                            {showPassword ? <MdVisibilityOff /> : <MdVisibility />}
+                          </button>
+                          <ErrorMessage name="password" component="div" className="invalid-feedback" />
+                        </div>
+                        <PasswordRequirements />
+                      </div>
+
+                      <div className="mb-3">
+                        <label htmlFor="confirmPassword" className="form-label fw-semibold">Confirmation du mot de passe</label>
+                        <div className="input-group">
+                          <span className="input-group-text" style={{ backgroundColor: theme.colors.light }}>
+                            <MdLock />
+                          </span>
+                          <Field
+                            type={showConfirmPassword ? 'text' : 'password'}
+                            name="confirmPassword"
+                            id="confirmPassword"
+                            className={`form-control ${errors.confirmPassword && touched.confirmPassword ? 'is-invalid' : ''}`}
+                            placeholder="Confirmez votre mot de passe"
+                            style={{
+                              backgroundColor: theme.colors.inputBg,
+                              boxShadow: theme.shadows.input,
+                              borderRadius: '0',
+                              padding: '0.75rem',
+                              transition: theme.transitions.default
+                            }}
+                          />
+                          <button
+                            type="button"
+                            className="input-group-text"
+                            onClick={toggleConfirmPasswordVisibility}
+                            style={{
+                              backgroundColor: theme.colors.light,
+                              cursor: 'pointer',
+                              borderRadius: `0 ${theme.borderRadius.input} ${theme.borderRadius.input} 0`,
+                              border: `1px solid ${theme.colors.border}`,
+                              borderLeft: 'none'
+                            }}
+                          >
+                            {showConfirmPassword ? <MdVisibilityOff /> : <MdVisibility />}
+                          </button>
+                          <ErrorMessage name="confirmPassword" component="div" className="invalid-feedback" />
+                        </div>
+                      </div>
+
+                      <div className="mb-4">
+                        <label htmlFor="role" className="form-label fw-semibold">Rôle</label>
+                        <div className="input-group">
+                          <span className="input-group-text" style={{ backgroundColor: theme.colors.light }}>
+                            <MdAdminPanelSettings />
+                          </span>
+                          <Field
+                            as="select"
+                            name="role"
+                            id="role"
+                            className={`form-select ${errors.role && touched.role ? 'is-invalid' : ''}`}
+                            style={{
+                              backgroundColor: theme.colors.inputBg,
+                              boxShadow: theme.shadows.input,
+                              borderRadius: `0 ${theme.borderRadius.input} ${theme.borderRadius.input} 0`,
+                              padding: '0.75rem',
+                              transition: theme.transitions.default
+                            }}
+                          >
+                            <option value="admin">Admin</option>
+                            <option value="super_admin">Super Admin</option>
+                          </Field>
+                          <ErrorMessage name="role" component="div" className="invalid-feedback" />
+                        </div>
+                        <small className="form-text text-muted">
+                          Le rôle Super Admin dispose de privilèges supplémentaires.
+                        </small>
+                      </div>
+
+                      <div className="d-grid gap-2 mt-4">
+                        <button
+                          type="submit"
+                          className="btn btn-success py-3 d-flex align-items-center justify-content-center gap-2"
+                          disabled={isSubmitting || isLoading}
+                          style={{
+                            backgroundColor: theme.colors.success,
+                            border: 'none',
+                            borderRadius: theme.borderRadius.button,
+                            boxShadow: theme.shadows.button,
+                            fontWeight: '500',
+                            transition: theme.transitions.default
+                          }}
+                          onMouseOver={(e) => {
+                            if (!isSubmitting && !isLoading) {
+                              e.currentTarget.style.backgroundColor = '#218838';
+                              e.currentTarget.style.transform = 'translateY(-2px)';
+                              e.currentTarget.style.boxShadow = '0 6px 10px rgba(40, 167, 69, 0.3)';
+                            }
+                          }}
+                          onMouseOut={(e) => {
+                            e.currentTarget.style.backgroundColor = theme.colors.success;
+                            e.currentTarget.style.transform = 'translateY(0)';
+                            e.currentTarget.style.boxShadow = theme.shadows.button;
+                          }}
+                        >
+                          {isSubmitting || isLoading ? (
+                            <>
+                              <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                              Inscription en cours...
+                            </>
+                          ) : (
+                            <>
+                              <MdHowToReg size={20} /> S&apos;inscrire
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </Form>
+                  )}
+                </Formik>
+
+                <div className="mt-4 text-center">
+                  <p className="mb-0" style={{ color: theme.colors.muted }}>
+                    Vous avez déjà un compte administrateur ?
+                  </p>
+                  <Link
+                    to="/admin/connexion"
+                    className="fw-semibold"
+                    style={{
+                      color: theme.colors.primary,
+                      textDecoration: 'none',
+                      transition: theme.transitions.default
+                    }}
+                    onMouseOver={(e) => {
+                      e.currentTarget.style.color = '#0a58ca';
+                      e.currentTarget.style.textDecoration = 'underline';
+                    }}
+                    onMouseOut={(e) => {
+                      e.currentTarget.style.color = theme.colors.primary;
+                      e.currentTarget.style.textDecoration = 'none';
+                    }}
+                  >
+                    Se connecter
                   </Link>
                 </div>
-              </Form>
-            )}
-          </Formik>
+              </div>
+            </div>
+
+            <div className="text-center mt-4">
+              <Link
+                to="/"
+                className="text-decoration-none"
+                style={{
+                  color: theme.colors.muted,
+                  transition: theme.transitions.default
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.color = theme.colors.text;
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.color = theme.colors.muted;
+                }}
+              >
+                ← Retour à l&apos;accueil
+              </Link>
+            </div>
+          </div>
         </div>
       </div>
     </>

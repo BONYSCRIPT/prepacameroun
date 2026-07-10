@@ -11,10 +11,10 @@ import GoogleSignInButton from './GoogleSignInButton';
 const Navbar = () => {
   const navigate = useNavigate();
 
-  // Configuration axios centralis e
+  // Configuration axios centralisée
   axios.defaults.baseURL = import.meta.env.VITE_API_URL || '';
 
-  // Th me de couleurs pour la coh rence avec le reste de l'application
+  // Thème de couleurs pour la cohérence avec le reste de l'application
   const theme = {
     primary: '#be0050',
     primaryDark: '#770033',
@@ -32,13 +32,13 @@ const Navbar = () => {
   };
 
   // Utilisation du contexte d'authentification utilisateur
-  const { user, login, logout, signup, loginWithEmailAndPassword } = useUserAuth(); // Ajout de signup et loginWithEmailAndPassword
+  const { user, login, logout, signup, loginWithEmailAndPassword } = useUserAuth();
 
-  //  tats pour g rer l'affichage des modales
+  // États pour gérer l'affichage des modales
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showSignupModal, setShowSignupModal] = useState(false);
 
-  //  tats pour les donn es des formulaires
+  // États pour les données des formulaires
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -51,36 +51,36 @@ const Navbar = () => {
     password: ''
   });
 
-  //  tat pour g rer les erreurs de validation
+  // État pour gérer les erreurs de validation
   const [errors, setErrors] = useState({});
 
-  //  tat de chargement pour les boutons Google
+  // État de chargement pour les boutons Google
   const [isGoogleLoading, setIsLoading] = useState(false);
 
-  // Sch ma de validation pour l'inscription
+  // Schéma de validation pour l'inscription
   const signupSchema = Yup.object().shape({
     username: Yup.string()
       .required('Le nom d\'utilisateur est requis')
       .min(3, 'Le nom d\'utilisateur doit contenir au moins 3 caract res')
       .max(30, 'Le nom d\'utilisateur ne doit pas d passer 30 caract res')
-      .matches(/^[a-zA-Z0-9_]+$/, 'Le nom d\'utilisateur ne peut contenir que des lettres, des chiffres et des underscores'),
+      .matches(/^[a-zA-Z0-9_]+$/, "Le nom d'utilisateur ne peut contenir que des lettres, des chiffres et des underscores"),
     email: Yup.string()
-      .required('L\'email est requis')
+      .required("L'email est requis")
       .email('Email invalide')
-      .test('allowed-domain', 'Domaine d\'email non autoris ', (value) => {
+      .test('allowed-domain', "Domaine d'email non autorisé", (value) => {
         const allowedDomains = ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com'];
         return allowedDomains.includes(value.split('@')[1]);
       }),
     password: Yup.string()
       .required("Le mot de passe est requis")
       .min(8, "Le mot de passe doit contenir au moins 8 caract res")
-      .matches(/^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[^a-zA-Z0-9]).{8,}$/, "Le mot de passe doit contenir au moins une majuscule, une minuscule, un chiffre et un caract re sp cial"),
+      .matches(/^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[^a-zA-Z0-9]).{8,}$/, "Le mot de passe doit contenir au moins une majuscule, une minuscule, un chiffre et un caractère spécial"),
     confirmPassword: Yup.string()
       .oneOf([Yup.ref('password'), null], "Les mots de passe doivent correspondre")
       .required("La confirmation du mot de passe est requise"),
   });
 
-  // Sch ma de validation pour la connexion
+  // Schéma de validation pour la connexion
   const loginSchema = Yup.object().shape({
     email: Yup.string()
       .required('L\'email est requis')
@@ -93,7 +93,7 @@ const Navbar = () => {
   const handleLoginInputChange = (e) => {
     const { name, value } = e.target;
     setLoginData({ ...loginData, [name]: value });
-    // Effacer l'erreur du champ modifi 
+    // Effacer l'erreur du champ modifié
     if (errors[name]) {
       setErrors({ ...errors, [name]: '' });
     }
@@ -103,7 +103,7 @@ const Navbar = () => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
-    // Effacer l'erreur du champ modifi 
+    // Effacer l'erreur du champ modifié
     if (errors[name]) {
       setErrors({ ...errors, [name]: '' });
     }
@@ -151,12 +151,12 @@ const Navbar = () => {
       const result = await loginWithEmailAndPassword(loginData.email, loginData.password);
 
       if (result.success) {
-        toast.success('Connexion r ussie !');
+        toast.success('Connexion réussie !');
         setShowLoginModal(false);
         setLoginData({ email: '', password: '' });
         navigate('/user/dashboard');
       } else {
-        // V rifier si l'erreur est due   un email non v rifi 
+        // Vérifier si l'erreur est due à un email non vérifié
         //if (result.error === "Email non vérifié") {
         //  toast.error("Veuillez vérifier votre email avant de vous connecter.");
         //  navigate('/verify-email-info'); // Rediriger vers la page VerifyEmailInfo
@@ -177,10 +177,10 @@ const Navbar = () => {
     }
   };
 
-  // Gestion de la d connexion
+  // Gestion de la déconnexion
   const handleLogout = () => {
     logout();
-    toast.success('D connexion r ussie');
+    toast.success('Déconnexion réussie');
     navigate('/');
   };
 
@@ -571,11 +571,11 @@ const Navbar = () => {
                         border: '1px solid #ced4da',
                         transition: theme.transition
                       }}
-                      placeholder="Cr ez un mot de passe"
+                      placeholder="Créez un mot de passe"
                     />
                     {errors.password && <div className="invalid-feedback">{errors.password}</div>}
                     <small className="form-text text-muted mt-1">
-                      Le mot de passe doit contenir au moins 8 caract res, une majuscule, une minuscule, un chiffre et un caract re sp cial.
+                      Le mot de passe doit contenir au moins 8 caractères, une majuscule, une minuscule, un chiffre et un caractère spécial.
                     </small>
                   </div>
                   <div className="mb-4">
@@ -639,7 +639,7 @@ const Navbar = () => {
               </div>
               <div className="modal-footer justify-content-center" style={{ backgroundColor: theme.light, borderTop: 'none', paddingBottom: '20px' }}>
                 <p className="text-center mb-0">
-                  D j  un compte?{' '}
+                  Déjà un compte ?{' '}
                   <button
                     className="btn btn-link p-0"
                     onClick={switchToLogin}
