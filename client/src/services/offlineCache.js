@@ -39,9 +39,25 @@ const openDB = () => {
 
 /**
  * Sauvegarde une prpa complte dans le cache hors-ligne
+ * Vrifie que la date d'expiration est valide avant de sauvegarder
  */
 export const savePrepaForOffline = async (prepaId, data, expirationDate) => {
   try {
+    // Vrifier que la date d'expiration est valide et non dj expire
+    if (!expirationDate) {
+      return { success: false, error: "Date d'expiration manquante" };
+    }
+
+    const expDate = expirationDate instanceof Date ? expirationDate : new Date(expirationDate);
+    if (isNaN(expDate.getTime())) {
+      return { success: false, error: "Date d'expiration invalide" };
+    }
+
+    const now = new Date();
+    if (expDate <= now) {
+      return { success: false, error: "Cette inscription a expir. Sauvegarde hors-ligne impossible." };
+    }
+
     const db = await openDB();
     const tx = db.transaction(STORE_NAME, 'readwrite');
     const store = tx.objectStore(STORE_NAME);
@@ -49,7 +65,7 @@ export const savePrepaForOffline = async (prepaId, data, expirationDate) => {
     const record = {
       prepaId,
       data,
-      expirationDate: expirationDate instanceof Date ? expirationDate.toISOString() : expirationDate,
+      expirationDate: expDate.toISOString(),
       savedAt: new Date().toISOString()
     };
 
@@ -59,7 +75,6 @@ export const savePrepaForOffline = async (prepaId, data, expirationDate) => {
       request.onerror = () => reject(request.error);
     });
 
-    tx.commit();
     db.close();
     return { success: true };
   } catch (error) {
@@ -88,9 +103,8 @@ export const getOfflinePrepa = async (prepaId) => {
     if (!record) return null;
 
     // Vrifier l'expiration
-    const now = new Date();
     const expDate = new Date(record.expirationDate);
-    if (expDate <= now) {
+    if (isNaN(expDate.getTime()) || expDate <= new Date()) {
       await removeOfflinePrepa(prepaId);
       return null;
     }
@@ -163,7 +177,6 @@ export const removeOfflinePrepa = async (prepaId) => {
       request.onerror = () => reject(request.error);
     });
 
-    tx.commit();
     db.close();
     return { success: true };
   } catch (error) {
@@ -174,6 +187,7 @@ export const removeOfflinePrepa = async (prepaId) => {
 
 /**
  * Nettoie toutes les prpas expires du cache
+ * Vrifie aussi les dates invalides (NaN)
  */
 export const cleanExpiredPrepas = async () => {
   try {
@@ -200,7 +214,24 @@ export const cleanExpiredPrepas = async () => {
       });
     }
 
-    tx.commit();
+    // Supprimer aussi les enregistrements avec date invalide (NaN)
+    const allRecords = await new Promise((resolve, reject) => {
+      const request = store.getAll();
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+
+    for (const record of allRecords) {
+      const expDate = new Date(record.expirationDate);
+      if (isNaN(expDate.getTime())) {
+        await new Promise((resolve, reject) => {
+          const request = store.delete(record.prepaId);
+          request.onsuccess = () => { deletedCount++; resolve(); };
+          request.onerror = () => reject(request.error);
+        });
+      }
+    }
+
     db.close();
     return deletedCount;
   } catch (error) {

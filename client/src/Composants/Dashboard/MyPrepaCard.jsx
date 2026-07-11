@@ -118,7 +118,7 @@ const MyPrepaCard = ({ inscription, onClick }) => {
                     <div className="mt-2">
                         <SauvegarderBtn
                             prepaId={inscription.prepa_id}
-                            expirationDate={inscription.date_expiration?.toDate ? inscription.date_expiration.toDate() : inscription.date_expiration}
+                            expirationDate={inscription.date_expiration?.toDate ? inscription.date_expiration.toDate() : (inscription.date_expiration || null)}
                             prepaNom={prepa_nom}
                         />
                     </div>

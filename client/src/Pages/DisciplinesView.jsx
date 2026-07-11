@@ -7,7 +7,7 @@ import PrepaBtn from '../Composants/DisciplinesView/PrepaBtn';
 import { useUserAuth } from '../contexts/useUserAuth';
 import { MdArrowBack, MdMenu } from 'react-icons/md';
 import { getUserInscriptions, getDisciplinesByPrepa } from '../services/firestoreService';
-import { getOfflinePrepa } from '../services/offlineCache';
+import { getOfflinePrepa, getOfflinePrepasList } from '../services/offlineCache';
 import { toast } from 'react-toastify';
 import theme from '../utils/theme';
 
@@ -59,7 +59,7 @@ const DisciplinesView = () => {
 
         if (isOffline) {
           // Mode hors-ligne : charger depuis le cache
-          const offlinePrepasList = await import('../services/offlineCache').then(m => m.getOfflinePrepasList());
+          const offlinePrepasList = await getOfflinePrepasList();
           if (offlinePrepasList.length > 0) {
             // Construire des inscriptions factices à partir du cache
             const cachedPrepas = offlinePrepasList.map(p => ({
@@ -95,7 +95,7 @@ const DisciplinesView = () => {
         console.error("Erreur lors de la récupération des préparations:", error);
         // Fallback vers le cache si Firestore échoue
         try {
-          const offlinePrepasList = await import('../services/offlineCache').then(m => m.getOfflinePrepasList());
+          const offlinePrepasList = await getOfflinePrepasList();
           if (offlinePrepasList.length > 0) {
             const cachedPrepas = offlinePrepasList.map(p => ({
               prepa_id: p.prepaId,

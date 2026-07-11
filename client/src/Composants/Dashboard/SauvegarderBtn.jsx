@@ -60,7 +60,7 @@ const SauvegarderBtn = ({ prepaId, expirationDate, prepaNom }) => {
         setIsSaved(true);
         toast.success(`"${prepaNom || 'Prpa'}" sauvegarde pour consultation hors-ligne`);
       } else {
-        throw new Error(result.error);
+        throw new Error(result.error || 'Erreur inconnue');
       }
     } catch (error) {
       console.error('Erreur sauvegarde:', error);
