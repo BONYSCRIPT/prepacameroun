@@ -16,6 +16,7 @@ import useDeviceSize from '../hooks/useDeviceSize';
 
 // Services Firestore (remplace axios + backend Express)
 import { getPublishedPrepas, getUserInscriptions } from '../services/firestoreService';
+import { getOfflinePrepasList } from '../services/offlineCache';
 import theme from '../utils/theme.jsx';
 import { useUserAuth } from '../contexts/useUserAuth';
 
@@ -311,12 +312,28 @@ const Dashboard = () => {
     queryFn: getPublishedPrepas
   });
 
-  // React Query pour les inscriptions de l'utilisateur (Firestore direct)
+  // React Query pour les inscriptions de l'utilisateur (Firestore direct + fallback offline)
   const { data: userPrepasData = [], isLoading: loadingUserPrepas } = useQuery({
     queryKey: ['userPrepas', user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
-      return await getUserInscriptions(user.id);
+      try {
+        return await getUserInscriptions(user.id);
+      } catch (error) {
+        console.warn('Firestore inaccessible, fallback vers cache offline:', error);
+        const offlineList = await getOfflinePrepasList();
+        if (offlineList.length > 0) {
+          toast.info('Mode hors-ligne : chargement depuis le cache');
+        return offlineList.map(p => ({
+            id: p.prepaId,
+            prepa_id: p.prepaId,
+            nom: p.nom,
+            statut: 'active',
+            date_expiration: p.expirationDate
+          }));
+        }
+        throw error;
+      }
     },
     enabled: !!user?.id
   });

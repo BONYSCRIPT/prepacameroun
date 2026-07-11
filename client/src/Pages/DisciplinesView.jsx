@@ -320,6 +320,34 @@ const DisciplinesView = () => {
 
       {renderOverlay()}
 
+      {/* Bouton hamburger pour ouvrir la sidebar sur mobile */}
+      {isMobile && (
+        <button
+          onClick={toggleSidebar}
+          style={{
+            position: 'fixed',
+            top: '70px',
+            left: '12px',
+            zIndex: 1020,
+            backgroundColor: theme.colors.primary,
+            color: 'white',
+            border: 'none',
+            borderRadius: '50%',
+            width: '44px',
+            height: '44px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 4px 12px rgba(190, 0, 80, 0.3)',
+            cursor: 'pointer',
+            transition: 'all 0.3s ease'
+          }}
+          aria-label="Menu préparations"
+        >
+          <MdMenu size={24} />
+        </button>
+      )}
+
       <div className="container-fluid" style={{
         marginTop: '76px',
         paddingBottom: '20px',
