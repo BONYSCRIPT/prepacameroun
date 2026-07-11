@@ -5,8 +5,10 @@ import { UserAuthProvider } from './contexts/UserAuthContext';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useEffect } from 'react';
 import ErrorBoundary from './Composants/ErrorBoundary';
 import InstallPWA from './Composants/InstallPWA';
+import { cleanExpiredPrepas } from './services/offlineCache';
 
 const queryClient = new QueryClient({
     defaultOptions: {
@@ -44,6 +46,15 @@ import AdminPrivateRoute from './utils/AdminPrivateRoute';
 import UserPrivateRoute from './utils/UserPrivateRoute';
 
 export default function App() {
+    // Nettoyage automatique des prépas expirées au démarrage
+    useEffect(() => {
+        cleanExpiredPrepas().then(count => {
+            if (count > 0) {
+                console.log(`${count} préparation(s) expirée(s) supprimée(s) du cache hors-ligne`);
+            }
+        });
+    }, []);
+
     return (
         <ErrorBoundary>
             <QueryClientProvider client={queryClient}>

@@ -7,6 +7,7 @@ import PrepaBtn from '../Composants/DisciplinesView/PrepaBtn';
 import { useUserAuth } from '../contexts/useUserAuth';
 import { MdArrowBack, MdMenu } from 'react-icons/md';
 import { getUserInscriptions, getDisciplinesByPrepa } from '../services/firestoreService';
+import { getOfflinePrepa } from '../services/offlineCache';
 import { toast } from 'react-toastify';
 import theme from '../utils/theme';
 
@@ -19,13 +20,14 @@ const DisciplinesView = () => {
   const [error, setError] = useState(null);
   const [showSidebar, setShowSidebar] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
 
   // Récupération du contexte d'authentification de l'utilisateur
   const { user } = useUserAuth();
   // Récupération de l'identifiant de la préparation depuis l'URL
   const { prepaId } = useParams();
 
-  // Détection de la taille de l'écran
+  // Détection de la taille de l'écran et de l'état de la connexion
   useEffect(() => {
     const handleResize = () => {
       setIsMobile(window.innerWidth < 768);
@@ -34,8 +36,18 @@ const DisciplinesView = () => {
       }
     };
 
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+
     window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
   }, []);
 
   // Effet pour récupérer les préparations de l'utilisateur
@@ -44,13 +56,35 @@ const DisciplinesView = () => {
       if (!user?.id) return;
       try {
         setLoading(true);
-        // 🔥 CORRECTION : passer l'userId à getUserInscriptions
+
+        if (isOffline) {
+          // Mode hors-ligne : charger depuis le cache
+          const offlinePrepasList = await import('../services/offlineCache').then(m => m.getOfflinePrepasList());
+          if (offlinePrepasList.length > 0) {
+            // Construire des inscriptions factices à partir du cache
+            const cachedPrepas = offlinePrepasList.map(p => ({
+              prepa_id: p.prepaId,
+              nom: p.nom,
+              statut: 'active',
+              date_expiration: p.expirationDate
+            }));
+            setPrepas(cachedPrepas);
+            const prepaToSelect = cachedPrepas.find(prepa => prepa.prepa_id?.toString() === prepaId) || cachedPrepas[0];
+            if (prepaToSelect?.prepa_id) {
+              setSelectedPrepa(prepaToSelect.prepa_id);
+            }
+          } else {
+            setError("Aucune préparation disponible hors-ligne. Connectez-vous à Internet pour télécharger vos prépas.");
+          }
+          setLoading(false);
+          return;
+        }
+
+        // Mode en ligne : charger depuis Firestore
         const inscriptions = await getUserInscriptions(user.id);
-        // Filtrer les inscriptions actives
         const activePrepas = inscriptions.filter(i => i.statut === 'active');
         setPrepas(activePrepas);
 
-        // Sélectionner la préparation correspondant à l'identifiant de l'URL
         const prepaToSelect = activePrepas.find(prepa => prepa.prepa_id?.toString() === prepaId) || activePrepas[0];
         if (prepaToSelect?.prepa_id) {
           setSelectedPrepa(prepaToSelect.prepa_id);
@@ -59,14 +93,36 @@ const DisciplinesView = () => {
         setLoading(false);
       } catch (error) {
         console.error("Erreur lors de la récupération des préparations:", error);
-        setError("Impossible de charger vos préparations. Veuillez réessayer plus tard.");
+        // Fallback vers le cache si Firestore échoue
+        try {
+          const offlinePrepasList = await import('../services/offlineCache').then(m => m.getOfflinePrepasList());
+          if (offlinePrepasList.length > 0) {
+            const cachedPrepas = offlinePrepasList.map(p => ({
+              prepa_id: p.prepaId,
+              nom: p.nom,
+              statut: 'active',
+              date_expiration: p.expirationDate
+            }));
+            setPrepas(cachedPrepas);
+            const prepaToSelect = cachedPrepas.find(prepa => prepa.prepa_id?.toString() === prepaId) || cachedPrepas[0];
+            if (prepaToSelect?.prepa_id) {
+              setSelectedPrepa(prepaToSelect.prepa_id);
+            }
+            toast.info("Mode hors-ligne : chargement depuis le cache");
+          } else {
+            setError("Impossible de charger vos préparations. Veuillez réessayer plus tard.");
+            toast.error("Erreur lors du chargement des préparations");
+          }
+        } catch {
+          setError("Impossible de charger vos préparations. Veuillez réessayer plus tard.");
+          toast.error("Erreur lors du chargement des préparations");
+        }
         setLoading(false);
-        toast.error("Erreur lors du chargement des préparations");
       }
     };
 
     fetchPrepas();
-  }, [user, prepaId]);
+  }, [user, prepaId, isOffline]);
 
   // Effet pour récupérer les disciplines de la préparation sélectionnée
   useEffect(() => {
@@ -74,22 +130,43 @@ const DisciplinesView = () => {
       if (!selectedPrepa) return;
       try {
         setLoading(true);
+
+        if (isOffline) {
+          // Mode hors-ligne : charger depuis le cache
+          const cachedData = await getOfflinePrepa(selectedPrepa);
+          if (cachedData?.disciplines) {
+            setDisciplines(cachedData.disciplines);
+          } else {
+            setDisciplines([]);
+            setError("Cette préparation n'est pas disponible hors-ligne.");
+          }
+          setLoading(false);
+          return;
+        }
+
+        // Mode en ligne : charger depuis Firestore
         const disciplinesData = await getDisciplinesByPrepa(selectedPrepa);
         setDisciplines(disciplinesData);
         setLoading(false);
       } catch (error) {
         console.error("Erreur lors de la récupération des disciplines:", error);
-        setDisciplines([]);
-        setError("Impossible de charger les disciplines. Veuillez réessayer plus tard.");
+        // Fallback vers le cache
+        const cachedData = await getOfflinePrepa(selectedPrepa);
+        if (cachedData?.disciplines) {
+          setDisciplines(cachedData.disciplines);
+          toast.info("Mode hors-ligne : disciplines chargées depuis le cache");
+        } else {
+          setDisciplines([]);
+          setError("Impossible de charger les disciplines.");
+        }
         setLoading(false);
-        toast.error("Erreur lors du chargement des disciplines");
       }
     };
 
     if (selectedPrepa) {
       fetchDisciplines();
     }
-  }, [selectedPrepa]);
+  }, [selectedPrepa, isOffline]);
 
   // Fonction pour gérer le clic sur un bouton de préparation
   const handlePrepaClick = (prepaId) => {

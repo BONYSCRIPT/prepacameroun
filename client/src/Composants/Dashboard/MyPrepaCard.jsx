@@ -1,6 +1,7 @@
 import { MdLibraryBooks, MdArrowForward } from "react-icons/md";
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
+import SauvegarderBtn from "./SauvegarderBtn";
 
 const MyPrepaCard = ({ inscription, onClick }) => {
     // Thème de couleurs pour la cohérence avec le reste de l'application
@@ -114,6 +115,13 @@ const MyPrepaCard = ({ inscription, onClick }) => {
                     >
                         Continuer <MdArrowForward />
                     </Link>
+                    <div className="mt-2">
+                        <SauvegarderBtn
+                            prepaId={inscription.prepa_id}
+                            expirationDate={inscription.date_expiration?.toDate ? inscription.date_expiration.toDate() : inscription.date_expiration}
+                            prepaNom={prepa_nom}
+                        />
+                    </div>
                 </div>
             </div>
         </div>
