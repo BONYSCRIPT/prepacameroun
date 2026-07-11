@@ -120,8 +120,8 @@ const Navbar = () => {
         setShowLoginModal(false);
         setLoginData({ email: '', password: '' });
         login(result.user);
-        // Redirection immédiate vers le dashboard
-        navigate('/user/dashboard');
+        // Redirection immédiate vers le dashboard (rechargement complet pour que UserPrivateRoute lise localStorage)
+        window.location.href = '/user/dashboard';
       } else {
         if (result.error === "Email non vérifié") {
           toast.error("Veuillez vérifier votre email avant de vous connecter.");
@@ -172,7 +172,7 @@ const Navbar = () => {
       provider: 'google.com',
       isAdmin: false
     });
-    navigate('/user/dashboard');
+    window.location.href = '/user/dashboard';
   };
 
   const handleGoogleError = (error) => {
