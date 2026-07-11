@@ -6,6 +6,7 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import ErrorBoundary from './Composants/ErrorBoundary';
+import InstallPWA from './Composants/InstallPWA';
 
 const queryClient = new QueryClient({
     defaultOptions: {
@@ -89,6 +90,7 @@ export default function App() {
                                 </Routes>
                             </Suspense>
                         </BrowserRouter>
+                        <InstallPWA />
                         <ToastContainer />
                     </UserAuthProvider>
                 </AdminAuthProvider>
