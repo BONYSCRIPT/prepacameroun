@@ -33,7 +33,6 @@ const Navbar = () => {
 
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showSignupModal, setShowSignupModal] = useState(false);
-  const [showFloatingButton, setShowFloatingButton] = useState(false);
 
   const [formData, setFormData] = useState({
     username: '',
@@ -96,8 +95,6 @@ const Navbar = () => {
       await signupSchema.validate(formData, { abortEarly: false });
       const result = await signup(formData.email, formData.password, formData.username);
       if (result.success) {
-        localStorage.setItem('pendingEmail', formData.email);
-        localStorage.setItem('pendingPassword', formData.password);
         toast.success('Inscription réussie!');
         setShowSignupModal(false);
         setFormData({ username: '', email: '', password: '', confirmPassword: '' });
@@ -123,7 +120,8 @@ const Navbar = () => {
         setShowLoginModal(false);
         setLoginData({ email: '', password: '' });
         login(result.user);
-        setShowFloatingButton(true);
+        // Redirection immédiate vers le dashboard
+        navigate('/user/dashboard');
       } else {
         if (result.error === "Email non vérifié") {
           toast.error("Veuillez vérifier votre email avant de vous connecter.");
@@ -145,7 +143,6 @@ const Navbar = () => {
   const handleLogout = () => {
     logout();
     toast.success('Déconnexion réussie');
-    setShowFloatingButton(false);
     navigate('/');
   };
 
@@ -175,7 +172,7 @@ const Navbar = () => {
       provider: 'google.com',
       isAdmin: false
     });
-    setShowFloatingButton(true);
+    navigate('/user/dashboard');
   };
 
   const handleGoogleError = (error) => {
@@ -186,24 +183,17 @@ const Navbar = () => {
     <nav className="navbar navbar-expand-lg sticky-top" style={{ backgroundColor: theme.secondary, boxShadow: theme.cardShadow }}>
       <div className="container-fluid">
         <a className="navbar-brand" href="#" style={{ display: 'flex', alignItems: 'center' }}>
-          <img
-            src={logo}
-            alt="Logo"
-            width="40"
-            height="40"
+          <img src={logo} alt="Logo" width="40" height="40"
             style={{ borderRadius: '50%', boxShadow: '0 2px 4px rgba(0,0,0,0.2)', transition: theme.transition }}
             onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
-            onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
-          />
+            onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'} />
           <span className="ms-2 fw-bold text-white">PrepaCameroun</span>
         </a>
-
         <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
           aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation"
           style={{ backgroundColor: 'rgba(255,255,255,0.1)', border: 'none' }}>
           <span className="navbar-toggler-icon"></span>
         </button>
-
         <div className="collapse navbar-collapse justify-content-end" id="navbarNav">
           {user ? (
             <>
@@ -242,22 +232,6 @@ const Navbar = () => {
           )}
         </div>
       </div>
-
-      {/* Bouton flottant après connexion */}
-      {showFloatingButton && user && (
-        <button
-          onClick={() => navigate('/user/dashboard')}
-          style={{
-            position: 'fixed', bottom: '24px', right: '24px', zIndex: 9999,
-            background: 'linear-gradient(135deg, #be0050, #e00060)', color: 'white', border: 'none',
-            borderRadius: '50px', padding: '16px 32px', fontWeight: '700', fontSize: '1rem',
-            boxShadow: '0 8px 32px rgba(190, 0, 80, 0.4)', cursor: 'pointer',
-            animation: 'pulse 2s infinite', display: 'flex', alignItems: 'center', gap: '8px'
-          }}
-        >
-          Accéder à mon espace →
-        </button>
-      )}
 
       {/* Modale de connexion */}
       {showLoginModal && (

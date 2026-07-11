@@ -1,4 +1,4 @@
-import { createContext, useState, useEffect, useRef } from 'react';
+import { createContext, useState, useEffect } from 'react';
 import {
   signInWithGoogle,
   signOutUser,
@@ -15,7 +15,6 @@ import {
   fetchSignInMethodsForEmail
 } from 'firebase/auth';
 
-import { getOrCreateUser, checkIfAdmin } from '../services/firestoreService';
 import { toast } from 'react-toastify';
 
 export const UserAuthContext = createContext(null);
@@ -24,49 +23,37 @@ export const UserAuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [firebaseUser, setFirebaseUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  // Flag pour éviter que onAuthStateChange écrase le setUser de signup()
-  const justSignedUpRef = useRef(false);
 
   // 🛡️ Écoute des changements d'état d'authentification Firebase
+  // ⚡ Version ultra-rapide : pas d'appel Firestore, juste localStorage
   useEffect(() => {
-    const unsubscribe = onAuthStateChange(async (firebaseUser) => {
+    const unsubscribe = onAuthStateChange((firebaseUser) => {
       setFirebaseUser(firebaseUser);
 
       if (firebaseUser) {
-        // ⏭️ Si on vient de s'inscrire, on saute Firestore (déjà fait dans signup)
-        if (justSignedUpRef.current) {
-          justSignedUpRef.current = false;
-          setLoading(false);
-          return;
-        }
-
-        try {
-          // Crée ou récupère l'utilisateur dans Firestore
-          const firestoreUser = await getOrCreateUser(firebaseUser);
-          
-          // Vérifie si admin
-          const adminData = await checkIfAdmin(firebaseUser.uid);
-          
-          setUser({
-            id: firebaseUser.uid,
-            ...firestoreUser,
-            email: firebaseUser.email,
-            username: firestoreUser.username || firebaseUser.displayName || firebaseUser.email.split('@')[0],
-            photoURL: firebaseUser.photoURL,
-            provider: firestoreUser.provider || 'firebase',
-            isAdmin: !!adminData,
-            adminRole: adminData?.role || null
-          });
-          localStorage.setItem('userData', JSON.stringify({ ...firestoreUser, isAdmin: !!adminData, adminRole: adminData?.role }));
-        } catch (error) {
-          console.error('Erreur Firestore:', error);
+        // Utilisateur Firebase connecté → on le met dans le state immédiatement
+        const localData = localStorage.getItem('userData');
+        if (localData) {
+          try {
+            const parsed = JSON.parse(localData);
+            setUser(parsed);
+          } catch {
+            setUser({
+              id: firebaseUser.uid,
+              email: firebaseUser.email,
+              username: firebaseUser.displayName || firebaseUser.email.split('@')[0],
+              photoURL: firebaseUser.photoURL,
+              provider: 'firebase',
+              isAdmin: false
+            });
+          }
+        } else {
           setUser({
             id: firebaseUser.uid,
             email: firebaseUser.email,
             username: firebaseUser.displayName || firebaseUser.email.split('@')[0],
             photoURL: firebaseUser.photoURL,
             provider: 'firebase',
-            isPartial: true,
             isAdmin: false
           });
         }
@@ -81,19 +68,6 @@ export const UserAuthProvider = ({ children }) => {
     return () => unsubscribe();
   }, []);
 
-  // 📂 Chargement localStorage (fallback pour les rechargements)
-  useEffect(() => {
-    const savedUser = localStorage.getItem('userData');
-    if (savedUser && !user) {
-      try {
-        setUser(JSON.parse(savedUser));
-      } catch (error) {
-        console.error('Erreur restauration utilisateur:', error);
-        localStorage.removeItem('userData');
-      }
-    }
-  }, [user]);
-
   const login = (userData) => {
     setUser(userData);
     localStorage.setItem('userData', JSON.stringify(userData));
@@ -103,7 +77,6 @@ export const UserAuthProvider = ({ children }) => {
     try {
       setLoading(true);
       const result = await signInWithGoogle();
-
       if (result.success) {
         return { success: true, user: result.user };
       } else {
@@ -135,11 +108,7 @@ export const UserAuthProvider = ({ children }) => {
       if (result.user) {
         await updateProfile(auth.currentUser, { displayName: username });
         await sendEmailVerification(auth.currentUser);
-        
-        // 🔥 Flag pour bloquer l'écouteur onAuthStateChange
-        justSignedUpRef.current = true;
 
-        // 🔥 Définir l'utilisateur IMMÉDIATEMENT (sans attendre Firestore)
         const newUser = {
           id: result.user.uid,
           email: result.user.email,
@@ -152,7 +121,7 @@ export const UserAuthProvider = ({ children }) => {
         localStorage.setItem('userData', JSON.stringify(newUser));
 
         toast.success("Inscription réussie !");
-        return { success: true, user: result.user };
+        return { success: true, user: newUser };
       } else {
         return { success: false, error: result.error };
       }
@@ -167,24 +136,21 @@ export const UserAuthProvider = ({ children }) => {
   const loginWithEmailAndPassword = async (email, password) => {
     try {
       setLoading(true);
-      
-      // 1️⃣ Vérifier d'abord les méthodes d'authentification disponibles pour cet email
+
+      // Vérifier les méthodes d'authentification disponibles
       const methods = await fetchSignInMethodsForEmail(auth, email);
-      
-      // Si le compte existe mais PAS par email/mot de passe (ex: Google uniquement)
+
       if (methods.length > 0 && !methods.includes('password')) {
         const provider = methods.includes('google.com') ? 'Google' : methods[0];
         toast.error(`Ce compte est lié à ${provider}. Veuillez vous connecter avec ${provider}.`);
         return { success: false, error: `${provider}` };
       }
 
-      // Si aucune méthode trouvée → compte inexistant
       if (methods.length === 0) {
         toast.error("Aucun compte trouvé avec cet email.");
         return { success: false, error: "Aucun compte trouvé" };
       }
 
-      // 2️⃣ Connexion avec email/mot de passe
       const result = await signInWithEmailAndPassword(auth, email, password);
 
       if (result.user) {
@@ -194,7 +160,6 @@ export const UserAuthProvider = ({ children }) => {
           return { success: false, error: "Email non vérifié" };
         }
 
-        // ✅ Formater l'utilisateur correctement (comme login() le fait)
         const formattedUser = {
           id: result.user.uid,
           email: result.user.email,
@@ -210,7 +175,6 @@ export const UserAuthProvider = ({ children }) => {
 
       return { success: false, error: "Erreur inconnue" };
     } catch (error) {
-      // Traduire les erreurs Firebase en français
       let message = "Email ou mot de passe incorrect";
       if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
         message = "Email ou mot de passe incorrect";
